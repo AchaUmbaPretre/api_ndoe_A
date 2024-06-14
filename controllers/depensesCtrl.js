@@ -112,7 +112,7 @@ exports.getDepenseDate = (req, res) => {
   const q = `SELECT depenses.*, users.username, categorie_depense.nom AS nom_categorie FROM depenses
               INNER JOIN users ON depenses.id_livreur = users.id
               INNER JOIN categorie_depense ON depenses.id_catDepense = categorie_depense.id_catDepense
-                WHERE DATE(depenses.date_depense) = '${dateId}'
+            WHERE DATE(depenses.date_depense) = '${dateId}'
               `;
    
   db.query(q, (error, data) => {
