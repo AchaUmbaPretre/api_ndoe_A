@@ -459,7 +459,7 @@ exports.getCommandeCount = (req, res) => {
   })
 }
 
-exports.postCommande = (req, res) => {
+/* exports.postCommande = (req, res) => {
     const q = 'INSERT INTO commande(`id_client`, `statut`, `id_livraison`, `id_paiement`, `user_cr`, `id_shop`, `paye`,`id_adresse`,`id_telephone`, `retour`) VALUES(?,?,?,?,?,?,?,?,?,?)';
     const paye = req.body.paye !== undefined ? req.body.paye : 0;
     const values = [
@@ -482,7 +482,65 @@ exports.postCommande = (req, res) => {
         res.json('Processus réussi');
       }
     });
-  };
+  }; */
+
+
+exports.postCommande = (req, res) => {
+
+    const checkQuery = `
+        SELECT * FROM commande 
+        WHERE id_client = ? AND statut = ? AND id_livraison = ? 
+        AND id_paiement = ? AND id_shop = ? 
+        AND id_adresse = ? AND id_telephone = ? AND retour = ?`;
+
+    const insertQuery = `
+        INSERT INTO commande(id_client, statut, id_livraison, id_paiement, user_cr, id_shop, paye, id_adresse, id_telephone, retour) 
+        VALUES(?,?,?,?,?,?,?,?,?,?)`;
+
+    const paye = req.body.paye !== undefined ? req.body.paye : 0;
+
+    const values = [
+        req.body.id_client,
+        req.body.statut || 2,
+        req.body.id_livraison || 0,
+        req.body.id_paiement || 0,
+        req.body.user_cr || 0,
+        req.body.id_shop || 1,
+        req.body.id_adresse,
+        req.body.id_telephone,
+        req.body.retour
+    ];
+
+    const checkValues = [
+        req.body.id_client,
+        req.body.statut || 2,
+        req.body.id_livraison || 0,
+        req.body.id_paiement || 0,
+        req.body.id_shop || 1,
+        req.body.id_adresse,
+        req.body.id_telephone,
+        req.body.retour
+    ];
+
+    db.query(checkQuery, checkValues, (error, results) => {
+        if (error) {
+            res.status(500).json(error);
+            console.log(error);
+        } else if (results.length > 0) {
+            res.status(400).json({ message: 'Commande déjà existante' });
+        } else {
+            // Insertion de la nouvelle commande si elle n'existe pas déjà
+            db.query(insertQuery, [...values, paye], (error, data) => {
+                if (error) {
+                    res.status(500).json(error);
+                    console.log(error);
+                } else {
+                    res.json('Processus réussi');
+                }
+            });
+        }
+    });
+};
 
 exports.putCommande = (req, res) => {
     const { id } = req.params;
