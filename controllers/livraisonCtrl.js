@@ -134,8 +134,8 @@ exports.getLivraisonDetail = (req, res)=>{
   INNER JOIN marque ON produit.id_marque = marque.id_marque
   INNER JOIN users ON detail_livraison.id_livreur  = users.id
   INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN adresse ON commande.id_adresse = adresse.id_adresse
-  INNER JOIN commune ON adresse.id_commune = commune.id_commune
+  LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
+  LEFT JOIN commune ON adresse.id_commune = commune.id_commune
   WHERE produit.est_supprime = 0
     ${start_date ? `AND DATE(detail_livraison.date_creation) >= '${start_date}'` : ''}
     ${end_date ? `AND DATE(detail_livraison.date_creation) <= '${end_date}'` : ''}
@@ -704,9 +704,9 @@ exports.getLivraisonUser = (req, res)=>{
                   INNER JOIN commande ON detail_livraison.id_commande = commande.id_commande 
                   INNER JOIN client ON commande.id_client = client.id
                   LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
-                  INNER JOIN  telephone ON commande.id_telephone = telephone.id_telephone
+                  LEFT JOIN  telephone ON commande.id_telephone = telephone.id_telephone
                   LEFT JOIN commune ON adresse.id_commune = commune.id_commune
-                  INNER JOIN province ON adresse.id_ville = province.id_province
+                  LEFT JOIN province ON adresse.id_ville = province.id_province
               WHERE vu_livreur = 0 AND id_livreur = ? GROUP BY commande.id_commande
             `;
  

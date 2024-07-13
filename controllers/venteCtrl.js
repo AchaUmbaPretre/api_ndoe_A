@@ -7,6 +7,7 @@ dotenv.config();
 
 exports.getVente = (req, res) => {
   const { start_date, end_date } = req.query;
+
     const q = `
         SELECT vente.*, users.username, varianteproduit.img, client.nom AS nom_client, client.telephone, marque.nom AS nom_marque, taille.taille AS pointure,
             SUM(vente.quantite) AS total_varianteproduit,
@@ -153,6 +154,54 @@ exports.getVenteOne = (req, res) => {
       return res.status(200).json(data);
   });
 }
+
+exports.getVenteRapports = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `
+        SELECT vente.*, users.username, varianteproduit.img, client.nom AS nom_client, client.telephone, marque.nom AS nom_marque, taille.taille AS pointure,
+            SUM(vente.quantite) AS total_varianteproduit,
+            SUM(vente.prix_unitaire) AS total_prix_vente, commande.id_shop,
+            COUNT(*) AS nombre_vendu
+        FROM vente
+        INNER JOIN users ON vente.id_livreur = users.id
+        INNER JOIN detail_commande ON vente.id_detail_commande = detail_commande.id_detail
+        INNER JOIN varianteproduit ON varianteproduit.id_varianteProduit = detail_commande.id_varianteProduit
+        INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+        INNER JOIN marque ON produit.id_marque = marque.id_marque
+        INNER JOIN commande ON vente.id_commande = commande.id_commande
+        INNER JOIN client ON commande.id_client = client.id
+        INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+        WHERE vente.est_supprime = 0
+  `;
+
+  if (filter === 'today') {
+    q += ` AND DATE(vente.date_vente) = CURDATE()`;
+  } else if (filter === 'yesterday') {
+    q += ` AND DATE(vente.date_vente) = CURDATE() - INTERVAL 1 DAY`;
+  } else if (filter === 'last7days') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 7 DAY`;
+  } else if (filter === 'last30days') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 30 DAY`;
+  } else if (filter === 'last1year') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 1 YEAR`;
+  }
+
+  q += `
+  GROUP BY vente.id_commande
+  ORDER BY vente.date_vente DESC;
+  `;
+
+  db.query(q, (error, data) => {
+    if (error) {
+      console.error('Error executing query:', error);
+      return res.status(500).send(error);
+    }
+    return res.status(200).json(data);
+  });
+};
+
+
 
 /* exports.postVente = (req, res) => {
   const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
@@ -715,9 +764,8 @@ exports.envoiEmail = (req, res) => {
       console.log(error);
       res.status(500).json({ error: "Une erreur s'est produite lors de l'exécution de la requête SQL." });
     } else {
-      const data = []; // Tableau pour stocker les données extraites
+      const data = [];
 
-      // Parcourir les résultats et extraire les valeurs souhaitées
       results.forEach((result) => {
         const {
           nom_marque,
@@ -729,7 +777,6 @@ exports.envoiEmail = (req, res) => {
           username,
         } = result;
 
-        // Créer un nouvel objet avec les valeurs extraites
         const item = {
           nom_marque,
           nom_produit,
@@ -776,7 +823,6 @@ exports.envoiEmail = (req, res) => {
         `;
       });
 
-      // Fermer le tableau HTML
       tableHTML += `
         </tbody>
       </table>
