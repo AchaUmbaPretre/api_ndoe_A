@@ -161,8 +161,8 @@ exports.getDepense7jours = (req, res) => {
 
   const q = `SELECT 
               CASE
-                  WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
-                  ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+                WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+                ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
@@ -179,8 +179,8 @@ exports.getDepense30jours = (req, res) => {
 
   const q = `SELECT 
               CASE
-                  WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
-                  ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+                WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+                ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
@@ -257,8 +257,7 @@ exports.depenseTotal = (req, res) => {
       })
 }
 
-
-  //caisse
+//caisse
 exports.caisseVenteCount = (req, res) => {
   const { start_date, end_date } = req.query;
 

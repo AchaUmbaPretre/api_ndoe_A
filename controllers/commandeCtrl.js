@@ -304,6 +304,39 @@ exports.getCommande = (req, res) => {
   });
 };
 
+
+exports.getCommandeRapportFiltrer = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `SELECT commande.*, COUNT(id_commande) AS nbre, client.nom, statut.nom_statut
+      FROM commande
+      INNER JOIN client ON commande.id_client = client.id
+      INNER JOIN statut ON commande.statut = statut.id_statut
+      WHERE commande.est_supprime = 0`;
+
+        if (filter === 'today') {
+          q += ` AND DATE(commande.date_commande) = CURDATE()`;
+        } else if (filter === 'yesterday') {
+          q += ` AND DATE(commande.date_commande) = CURDATE() - INTERVAL 1 DAY`;
+        } else if (filter === 'last7days') {
+          q += ` AND DATE(commande.date_commande) >= CURDATE() - INTERVAL 7 DAY`;
+        } else if (filter === 'last30days') {
+          q += ` AND DATE(commande.date_commande) >= CURDATE() - INTERVAL 30 DAY`;
+        } else if (filter === 'last1year') {
+          q += ` AND DATE(commande.date_commande) >= CURDATE() - INTERVAL 1 YEAR`;
+        }
+
+        q += `
+        GROUP BY commande.id_commande
+        ORDER BY commande.date_commande DESC;
+        `;
+   
+  db.query(q, (error, data) => {
+      if (error) res.status(500).send(error);
+      return res.status(200).json(data);
+  });
+}
+
 exports.getCommandeEchange = (req, res) => {
 
   const q = `SELECT commande.*, client.nom, statut.nom_statut

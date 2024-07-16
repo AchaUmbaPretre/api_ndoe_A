@@ -1,5 +1,5 @@
 const express = require("express");
-const { getDemandeCommande, getDemandeCommandeCount, postDemandeCommande, deleteDemandeCommande, getCommandeCount, getCommande, postCommande, deleteCommande, getStatus, putCommande, getCommandeOne, getDemandeCommandeAll, getIdVariantProduit, getCommande7jrs, getCommandeJour, getCommandeEchange, getCommande30Jours, getCommande1an, getCommandeHier,RapportCommandeCountMoney, getCommandeCountJour, getCommandeCount7Jour } = require("../controllers/commandeCtrl");
+const { getDemandeCommande, getDemandeCommandeCount, postDemandeCommande, deleteDemandeCommande, getCommandeCount, getCommande, postCommande, deleteCommande, getStatus, putCommande, getCommandeOne, getDemandeCommandeAll, getIdVariantProduit, getCommande7jrs, getCommandeJour, getCommandeEchange, getCommande30Jours, getCommande1an, getCommandeHier,RapportCommandeCountMoney, getCommandeCountJour, getCommandeCount7Jour, getCommandeRapportFiltrer } = require("../controllers/commandeCtrl");
 const router = express.Router();
 
 
@@ -8,6 +8,7 @@ router.get('/commandeRapportTopbar', RapportCommandeCountMoney)
 
 //commande
 router.get('/', getCommande)
+router.get('/commande_rapport', getCommandeRapportFiltrer)
 router.get('/commandeEchange', getCommandeEchange)
 router.get('/commandeJourCount', getCommandeCountJour)
 router.get('/commande7JourCount', getCommandeCount7Jour)
