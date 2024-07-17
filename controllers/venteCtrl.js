@@ -992,6 +992,40 @@ exports.getDette = (req, res) => {
   });
 };
 
+exports.getDetteRapports = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `SELECT dette.*, client.nom, COUNT(*) AS nbre_dette, client.id AS id_client, client.telephone, 
+              (SUM(dette.montant_convenu) - SUM(dette.montant_paye)) AS montant_restant, commande.id_shop,  SUM(dette.montant_convenu) AS montant_convenuV,SUM(dette.montant_paye) AS montant_payeV
+            FROM dette
+            INNER JOIN commande ON dette.id_commande = commande.id_commande
+            LEFT JOIN client ON commande.id_client = client.id
+            WHERE client.est_supprime = 0`;
+
+              if (filter === 'today') {
+                q += ` AND DATE(dette.created_at) = CURDATE()`;
+              } else if (filter === 'yesterday') {
+                q += ` AND DATE(dette.created_at) = CURDATE() - INTERVAL 1 DAY`;
+              } else if (filter === 'last7days') {
+                q += ` AND DATE(dette.created_at) >= CURDATE() - INTERVAL 7 DAY`;
+              } else if (filter === 'last30days') {
+                q += ` AND DATE(dette.created_at) >= CURDATE() - INTERVAL 30 DAY`;
+              } else if (filter === 'last1year') {
+                q += ` AND DATE(dette.created_at) >= CURDATE() - INTERVAL 1 YEAR`;
+              }
+
+              q += `
+              GROUP BY client.id
+              ORDER BY dette.created_at DESC
+              `;
+
+    db.query(q, (error, data) => {
+    if (error) {
+      return res.status(500).send(error);
+    }
+    return res.status(200).json(data);
+  });
+};
 
 exports.getDettePaiement = (req, res) => {
 
@@ -1277,6 +1311,35 @@ exports.getPaiement = (req, res) => {
                 return res.status(200).json(data);
             })
 }
+
+exports.getPaiementRapport = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `SELECT paiement.*, client.nom, client.telephone FROM paiement
+              LEFT JOIN client ON paiement.id_client = client.id`
+
+              if (filter === 'today') {
+                q += ` AND DATE(paiement.created_at) = CURDATE()`;
+              } else if (filter === 'yesterday') {
+                q += ` AND DATE(paiement.created_at) = CURDATE() - INTERVAL 1 DAY`;
+              } else if (filter === 'last7days') {
+                q += ` AND DATE(paiement.created_at) >= CURDATE() - INTERVAL 7 DAY`;
+              } else if (filter === 'last30days') {
+                q += ` AND DATE(paiement.created_at) >= CURDATE() - INTERVAL 30 DAY`;
+              } else if (filter === 'last1year') {
+                q += ` AND DATE(paiement.created_at) >= CURDATE() - INTERVAL 1 YEAR`;
+              }
+
+              q += `
+              ORDER BY paiement.created_at;
+              `;
+
+              db.query(q ,(error, data)=>{
+                if(error) res.status(500).send(error)
+                return res.status(200).json(data);
+            })
+}
+
 
 exports.getPaiementJour = (req, res) => {
 

@@ -1,5 +1,5 @@
 const express = require("express");
-const { getVente, postVente, deleteVente, putVente, postVenteRetour, getVenteOne, getVenteCount, getDette, deleteDette, putDette, getPaiement, deletePaiement, postPaiement, getDetteOne, envoiEmail, getOptions, postEchangeLivraison, getDetteRapport, getDetteJour, getDetteJour7, getDetteJour30, postVenteEchange, getDettePaiement, getVenteAjour, getPaiementJour, getPaiementJour7, getPaiementJour30, getDetteRapportNbreJour, getDetteRapportNbreJour7, getDetteRapportNbreJour30, getVenteAjour7, getVenteAjour30, getVenteAjour1an, getVenteCountDuJour, getPaiementJourMontant, getPaiementJourMontant7, getPaiementJourMontant30, getPaiementJourMontant1an, getDetteRapportNbreJour1an, getVenteHier, getPaiementHier, getDetteRapportNbreHier, getPaiementHierMontant,getVenteRapports } = require("../controllers/venteCtrl");
+const { getVente, postVente, deleteVente, putVente, postVenteRetour, getVenteOne, getVenteCount, getDette, deleteDette, putDette, getPaiement, deletePaiement, postPaiement, getDetteOne, envoiEmail, getOptions, postEchangeLivraison, getDetteRapport, getDetteJour, getDetteJour7, getDetteJour30, postVenteEchange, getDettePaiement, getVenteAjour, getPaiementJour, getPaiementJour7, getPaiementJour30, getDetteRapportNbreJour, getDetteRapportNbreJour7, getDetteRapportNbreJour30, getVenteAjour7, getVenteAjour30, getVenteAjour1an, getVenteCountDuJour, getPaiementJourMontant, getPaiementJourMontant7, getPaiementJourMontant30, getPaiementJourMontant1an, getDetteRapportNbreJour1an, getVenteHier, getPaiementHier, getDetteRapportNbreHier, getPaiementHierMontant,getVenteRapports, getDetteRapports, getPaiementRapport } = require("../controllers/venteCtrl");
 const router = express.Router();
 
 
@@ -22,6 +22,7 @@ router.put('/:id', putVente)
 
 //Dette
 router.get('/vente/dette', getDette)
+router.get('/vente/dette_rapport', getDetteRapports)
 router.get('/vente/dettePaiement', getDettePaiement)
 router.get('/vente/detteJour', getDetteJour)
 router.get('/vente/detteJour7', getDetteJour7)
@@ -38,6 +39,7 @@ router.put('/vente/dette/:id', putDette)
 
 //Paiement
 router.get('/vente/paiement',getPaiement)
+router.get('/vente/paiement_rapport',getPaiementRapport)
 router.get('/vente/paiementJour',getPaiementJour)
 router.get('/vente/paiementHier',getPaiementHier)
 router.get('/vente/paiementJour7', getPaiementJour7)

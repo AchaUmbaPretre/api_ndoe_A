@@ -1,10 +1,11 @@
 const express = require("express");
-const { getLivraison, getLivraisonOne, postLivraison, deleteLivraison, getLivraisonDetail, getLivraisonDetailOne, postLivraisonDetail, deleteLivraisonDetail, getLivraisonUser, getLivraisonUserDetail, putLivraisonVuLivreur, getLivraisonUserOne, getLivraisonDetailPrix, putLivraisonDetailPrix, getLivraisonDetailJour, getLivraisonNbreJour, getLivraisonNbreDuJour7, getLivraisonNbreDuJour30, getLivraisonNbreDuJour1an, getLivraisonNbreDuJours, getLivraisonNbreDHier } = require("../controllers/livraisonCtrl");
+const { getLivraison, getLivraisonOne, postLivraison, deleteLivraison, getLivraisonDetail, getLivraisonDetailOne, postLivraisonDetail, deleteLivraisonDetail, getLivraisonUser, getLivraisonUserDetail, putLivraisonVuLivreur, getLivraisonUserOne, getLivraisonDetailPrix, putLivraisonDetailPrix, getLivraisonDetailJour, getLivraisonNbreJour, getLivraisonNbreDuJour7, getLivraisonNbreDuJour30, getLivraisonNbreDuJour1an, getLivraisonNbreDuJours, getLivraisonNbreDHier, getLivraisonDetailRapportFiltrer } = require("../controllers/livraisonCtrl");
 const router = express.Router();
 
 
 
 router.get("/", getLivraison);
+router.get("/livraison_rapport", getLivraisonDetailRapportFiltrer);
 router.get("/livraisonNbreDuJours", getLivraisonNbreDuJours);
 router.get("/livraisonNbreDHier", getLivraisonNbreDHier);
 router.get("/livraisonNbreDuJour7", getLivraisonNbreDuJour7);

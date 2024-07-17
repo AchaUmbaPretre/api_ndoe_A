@@ -149,6 +149,43 @@ exports.getLivraisonDetail = (req, res)=>{
   });
 }
 
+exports.getLivraisonDetailRapportFiltrer = (req, res)=>{
+  const filter = req.query.filter;
+
+  let q = `SELECT SUM(detail_livraison.qte_commande) AS quant, detail_livraison.*,varianteproduit.img, client.nom AS nom_client, client.id AS id_client, client.telephone, marque.nom AS nom_marque, users.username AS nom_livreur, taille.taille AS pointure, SUM(detail_livraison.qte_livre) AS total_produit, commande.id_shop, commune.nom_commune FROM detail_livraison
+  INNER JOIN varianteproduit ON detail_livraison.id_varianteProduit = varianteproduit.id_varianteProduit
+  INNER JOIN commande ON detail_livraison.id_commande = commande.id_commande
+  INNER JOIN client ON commande.id_client = client.id
+  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+  INNER JOIN marque ON produit.id_marque = marque.id_marque
+  INNER JOIN users ON detail_livraison.id_livreur  = users.id
+  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+  LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
+  LEFT JOIN commune ON adresse.id_commune = commune.id_commune
+  WHERE produit.est_supprime = 0
+              `;
+    if (filter === 'today') {
+      q += ` AND DATE(detail_livraison.date_creation) = CURDATE()`;
+    } else if (filter === 'yesterday') {
+      q += ` AND DATE(detail_livraison.date_creation) = CURDATE() - INTERVAL 1 DAY`;
+    } else if (filter === 'last7days') {
+      q += ` AND DATE(detail_livraison.date_creation) >= CURDATE() - INTERVAL 7 DAY`;
+    } else if (filter === 'last30days') {
+      q += ` AND DATE(detail_livraison.date_creation) >= CURDATE() - INTERVAL 30 DAY`;
+    } else if (filter === 'last1year') {
+      q += ` AND DATE(detail_livraison.date_creation) >= CURDATE() - INTERVAL 1 YEAR`;
+    }
+
+    q += `
+        GROUP BY commande.id_commande
+        ORDER BY detail_livraison.date_creation DESC
+        `;
+  db.query(q, (error, data) => {
+      if (error) res.status(500).send(error);
+      return res.status(200).json(data);
+  });
+}
+
 exports.getLivraisonDetailJour = (req, res)=>{
 
   const q = `SELECT SUM(detail_livraison.qte_commande) AS quant, detail_livraison.*,varianteproduit.img, client.nom AS nom_client, client.id AS id_client, client.telephone, marque.nom AS nom_marque, users.username AS nom_livreur, taille.taille AS pointure, SUM(detail_livraison.qte_livre) AS total_produit, commande.id_shop, commune.nom_commune FROM detail_livraison

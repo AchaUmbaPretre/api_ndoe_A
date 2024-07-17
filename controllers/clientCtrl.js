@@ -92,6 +92,36 @@ exports.getClient = (req, res) => {
     });
 }
 
+
+exports.getClientRapport = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `
+  SELECT client.*, province.nom_province, commune.nom_commune 
+      FROM client 
+  LEFT JOIN province ON client.id_province = province.id_province 
+  LEFT JOIN commune ON client.commune = commune.id_commune
+  WHERE est_supprime = 0
+  `;
+
+  if (filter === 'today') {
+    q += ` AND DATE(client.created_at) = CURDATE()`;
+  } else if (filter === 'yesterday') {
+    q += ` AND DATE(client.created_at) = CURDATE() - INTERVAL 1 DAY`;
+  } else if (filter === 'last7days') {
+    q += ` AND DATE(client.created_at) >= CURDATE() - INTERVAL 7 DAY`;
+  } else if (filter === 'last30days') {
+    q += ` AND DATE(client.created_at) >= CURDATE() - INTERVAL 30 DAY`;
+  } else if (filter === 'last1year') {
+    q += ` AND DATE(client.created_at) >= CURDATE() - INTERVAL 1 YEAR`;
+  }
+
+  db.query(q, (error, data) => {
+      if (error) res.status(500).send(error);
+      return res.status(200).json(data);
+  });
+}
+
 exports.getClientOne = (req, res) => {
   const {id} = req.params;
 

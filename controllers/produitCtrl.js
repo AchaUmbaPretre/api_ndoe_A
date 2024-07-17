@@ -55,7 +55,6 @@ exports.getProduitOne = (req,res) => {
   });
 }
 
-
 exports.getProduitTotalAchats = (req, res) => {
     const q = `
       SELECT
@@ -70,7 +69,7 @@ exports.getProduitTotalAchats = (req, res) => {
     });
   };
 
-  exports.getProduitRecement = (req, res) => {
+exports.getProduitRecement = (req, res) => {
     try {
       const q = `
         SELECT
@@ -297,7 +296,6 @@ exports.getListeVariantProduit = (req, res) => {
       return res.status(200).json(data);
     });
   }
-
 
 
 exports.getVariantProduitOne = (req, res) => {
@@ -1647,6 +1645,86 @@ exports.getMouvement = (req, res) => {
   db.query(q, (error, data) => {
     if (error) {
       console.log(error)
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data);
+  });
+};
+
+exports.getMouvementEncoursRapports = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, taille.taille,marque.nom AS nom_marque, taille.taille,client.nom AS nom_client FROM mouvement_stock 
+  INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
+  INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
+  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+  INNER JOIN marque ON produit.id_marque = marque.id_marque
+  INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
+  INNER JOIN client ON commande.id_client = client.id
+    WHERE mouvement_stock.id_type_mouvement = 12
+ `;
+
+ if (filter === 'today') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) = CURDATE()`;
+} else if (filter === 'yesterday') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) = CURDATE() - INTERVAL 1 DAY`;
+} else if (filter === 'last7days') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 7 DAY`;
+} else if (filter === 'last30days') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 30 DAY`;
+} else if (filter === 'last1year') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 1 YEAR`;
+}
+
+ q += `
+    GROUP BY mouvement_stock.id_mouvement
+    ORDER BY mouvement_stock.date_mouvement DESC
+ `;
+
+  db.query(q, (error, data) => {
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data);
+  });
+};
+
+exports.getMouvementVenteRapports = (req, res) => {
+  const filter = req.query.filter;
+
+  let q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, taille.taille,marque.nom AS nom_marque, taille.taille,client.nom AS nom_client FROM mouvement_stock 
+  INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
+  INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
+  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+  INNER JOIN marque ON produit.id_marque = marque.id_marque
+  INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
+  INNER JOIN client ON commande.id_client = client.id
+    WHERE mouvement_stock.id_type_mouvement = 4
+ `;
+
+ if (filter === 'today') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) = CURDATE()`;
+} else if (filter === 'yesterday') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) = CURDATE() - INTERVAL 1 DAY`;
+} else if (filter === 'last7days') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 7 DAY`;
+} else if (filter === 'last30days') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 30 DAY`;
+} else if (filter === 'last1year') {
+  q += ` AND DATE(mouvement_stock.date_mouvement) >= CURDATE() - INTERVAL 1 YEAR`;
+}
+
+ q += `
+    GROUP BY mouvement_stock.id_mouvement
+    ORDER BY mouvement_stock.date_mouvement DESC
+ `;
+
+  db.query(q, (error, data) => {
+    if (error) {
       return res.status(500).json({ error: error.message });
     }
 
