@@ -1143,7 +1143,7 @@ exports.getAchatsTotalDuel = (req, res) => {
   })
   }
 
-exports.getVenteTotal = (req, res) => {
+/* exports.getVenteTotal = (req, res) => {
   const { start_date, end_date } = req.query;
 
   const q = `SELECT SUM(prix_unitaire) AS montant_total_vente
@@ -1160,7 +1160,45 @@ exports.getVenteTotal = (req, res) => {
 
     return res.status(200).json(data);
   });
+}; */
+
+exports.getVenteTotal = (req, res) => {
+  const { start_date, end_date, filter, year } = req.query;
+
+  let q = `SELECT SUM(prix_unitaire) AS montant_total_vente
+           FROM vente
+           WHERE vente.est_supprime = 0`;
+
+  if (start_date) {
+    q += ` AND DATE(vente.date_vente) >= '${start_date}'`;
+  }
+  if (end_date) {
+    q += ` AND DATE(vente.date_vente) <= '${end_date}'`;
+  }
+  if (filter === 'today') {
+    q += ` AND DATE(vente.date_vente) = CURDATE()`;
+  } else if (filter === 'yesterday') {
+    q += ` AND DATE(vente.date_vente) = CURDATE() - INTERVAL 1 DAY`;
+  } else if (filter === 'last7days') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 7 DAY`;
+  } else if (filter === 'last30days') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 30 DAY`;
+  } else if (filter === 'last1year') {
+    q += ` AND DATE(vente.date_vente) >= CURDATE() - INTERVAL 1 YEAR`;
+  } else if (filter === 'year' && year) {
+    q += ` AND YEAR(vente.date_vente) = ${db.escape(year)}`;
+  }
+
+  db.query(q, (error, data) => {
+    if (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'Une erreur s\'est produite lors de l\'exécution de la requête.' });
+    }
+
+    return res.status(200).json(data);
+  });
 };
+
 
 exports.getVenteTotalDuJour = (req, res) => {
 

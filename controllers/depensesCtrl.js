@@ -244,7 +244,7 @@ exports.deleteDepense = (req, res) => {
 
 }
 
-exports.depenseTotal = (req, res) => {
+/* exports.depenseTotal = (req, res) => {
 
     const q = `SELECT SUM(montant) AS total_depense FROM depenses
    
@@ -255,7 +255,45 @@ exports.depenseTotal = (req, res) => {
     
         return res.status(200).json(data);
       })
-}
+} */
+
+exports.depenseTotal = (req, res) => {
+  const { start_date, end_date, filter, year } = req.query;
+      
+        let q = `SELECT SUM(montant) AS total_depense
+                 FROM depenses
+                 WHERE est_supprime = 0`;
+      
+        if (start_date) {
+          q += ` AND DATE(depenses.date_depense) >= '${start_date}'`;
+        }
+        if (end_date) {
+          q += ` AND DATE(depenses.date_depense) <= '${end_date}'`;
+        }
+        if (filter === 'today') {
+          q += ` AND DATE(depenses.date_depense) = CURDATE()`;
+        } else if (filter === 'yesterday') {
+          q += ` AND DATE(depenses.date_depense) = CURDATE() - INTERVAL 1 DAY`;
+        } else if (filter === 'last7days') {
+          q += ` AND DATE(depenses.date_depense) >= CURDATE() - INTERVAL 7 DAY`;
+        } else if (filter === 'last30days') {
+          q += ` AND DATE(depenses.date_depense) >= CURDATE() - INTERVAL 30 DAY`;
+        } else if (filter === 'last1year') {
+          q += ` AND DATE(depenses.date_depense) >= CURDATE() - INTERVAL 1 YEAR`;
+        } else if (filter === 'year' && year) {
+          q += ` AND YEAR(depenses.date_depense) = ${db.escape(year)}`;
+        }
+      
+        db.query(q, (error, data) => {
+          if (error) {
+            console.error(error);
+            return res.status(500).json({ error: 'Une erreur s\'est produite lors de l\'exécution de la requête.' });
+          }
+      
+          return res.status(200).json(data);
+        });
+      };
+      
 
 //caisse
 exports.caisseVenteCount = (req, res) => {
