@@ -58,6 +58,6 @@ router.get('/options/side', getOptions)
 
 //Echange
 router.post('/echangeLivraison',postEchangeLivraison)
-router.put('/echange/:idEchange/:idDetail/:idVariant',postVenteEchange)
+router.put('/echange/:idEchange/:idDetail/:idVariant/:prix',postVenteEchange)
 
 module.exports = router;

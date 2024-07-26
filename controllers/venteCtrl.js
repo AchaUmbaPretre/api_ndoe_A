@@ -1727,17 +1727,13 @@ exports.postEchangeLivraison = (req, res) => {
                           db.query(qStockeTaille,[ req.body.id_varianteProduit],(insertQError,dataQ) => {
                             if(insertQError){
                               res.status(500).json(insertQError);
-                              console.log(insertQError)
                             } else{
                               const stockTailleActuel = dataQ[0].stock
 
                               let newStock = stockTailleActuel - parseInt(req.body.qte_commande);
-
-                              console.log(newStock)
                               db.query(qUpdateStockEchange,[newStock,req.body.id_varianteProduit],(errorStockUpdate, dataStockUpdate)=> {
                                 if(errorStockUpdate){
                                   res.status(500).json(errorStockUpdate)
-                                  console.log(errorStockUpdate)
                                 } else{
                                   res.status(200).json({ message: 'Échange de livraison effectué avec succès.' });
                                 }
@@ -1762,8 +1758,9 @@ exports.postVenteEchange = (req, res) => {
   const idEchange = req.params.idEchange;
   const idDetail = req.params.idDetail;
   const idVariant = req.params.idVariant;
+  const prix = req.params.prix;
   
-  const updateVenteQuery = `UPDATE vente SET id_detail_commande = ${idDetail} WHERE id_detail_commande = ${idEchange}`;
+  const updateVenteQuery = `UPDATE vente SET id_detail_commande = ${idDetail}, prix_unitaire = ${prix} WHERE id_detail_commande = ${idEchange}`;
   const qLivraison = `UPDATE detail_livraison SET vu_livreur = 1 WHERE id_varianteProduit = ${idVariant}`;
 
   db.query(updateVenteQuery,(error,dataEchange) =>{
