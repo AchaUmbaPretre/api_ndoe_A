@@ -84,6 +84,7 @@ exports.getClient = (req, res) => {
     LEFT JOIN province ON client.id_province = province.id_province 
     LEFT JOIN commune ON client.commune = commune.id_commune
     WHERE est_supprime = 0
+    ORDER BY client.nom
     `;
      
     db.query(q, (error, data) => {
@@ -219,79 +220,8 @@ exports.getClientOne = (req, res) => {
 }; */
 
 /* 2 */
+
 /* exports.postClient = (req, res) => {
-  const checkClientQuery = 'SELECT COUNT(*) AS count FROM client WHERE nom = ? AND telephone = ?';
-  const insertClientQuery = 'INSERT INTO client(`nom`, `raison_sociale`, `adresse`, `email`, `telephone`, `id_province`, `avenue`, `quartier`, `commune`, `num`) VALUES(?,?,?,?,?,?,?,?,?,?)';
-  const insertAdresseQuery = 'INSERT INTO adresse(`id_client`, `id_ville`, `id_commune`, `avenue`, `quartier`, `num`, `ref`) VALUES(?,?,?,?,?,?,?)';
-  const insertTelephoneQuery = 'INSERT INTO telephone(`id_client`, `numero`) VALUES(?,?)';
-
-  const values = [
-    req.body.nom,
-    req.body.raison_sociale,
-    req.body.adresse,
-    req.body.email,
-    req.body.telephone,
-    req.body.id_province,
-    req.body.avenue,
-    req.body.quartier,
-    req.body.commune,
-    req.body.num
-  ];
-
-  // Vérifier si le client existe déjà avec le même nom et le même numéro de téléphone
-  db.query(checkClientQuery, [req.body.nom, req.body.telephone], (error, result) => {
-    if (error) {
-      res.status(500).json(error);
-      console.log(error);
-    } else {
-      const clientExists = result[0].count > 0;
-
-      if (clientExists) {
-        // Le client existe déjà avec le même nom et le même numéro de téléphone
-        res.status(400).json({ message: 'Le client existe déjà avec ce nom et ce numéro de téléphone.' });
-      } else {
-        // Insérer le client dans la table
-        db.query(insertClientQuery, values, (error, clientData) => {
-          if (error) {
-            res.status(500).json(error);
-            console.log(error);
-          } else {
-            const clientId = clientData.insertId;
-            const valuesAdresse = [
-              clientId,
-              req.body.id_province,
-              req.body.id_commune,
-              req.body.avenue,
-              req.body.quartier,
-              req.body.num,
-              req.body.ref
-            ];
-            db.query(insertAdresseQuery, valuesAdresse, (error, adresseData) => {
-              if (error) {
-                res.status(500).json(error);
-              } else {
-                const valuesTelephone = [
-                  clientId,
-                  req.body.telephone
-                ];
-                db.query(insertTelephoneQuery, valuesTelephone, (error, telephoneData) => {
-                  if (error) {
-                    res.status(500).json(error);
-                  } else {
-                    res.json('Processus réussi');
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
-    }
-  });
-}; */
-
-
-exports.postClient = (req, res) => {
   const checkClientQuery = 'SELECT COUNT(*) AS count FROM client WHERE nom = ? AND telephone = ?';
   const insertClientQuery = 'INSERT INTO client(`nom`, `raison_sociale`, `adresse`, `email`, `telephone`, `id_province`, `avenue`, `quartier`, `commune`, `num`) VALUES(?,?,?,?,?,?,?,?,?,?)';
   const insertAdresseQuery = 'INSERT INTO adresse(`id_client`, `id_ville`, `id_commune`, `avenue`, `quartier`, `num`, `ref`) VALUES(?,?,?,?,?,?,?)';
@@ -363,6 +293,118 @@ exports.postClient = (req, res) => {
         });
       });
     }
+  });
+}; */
+
+exports.postClient = (req, res) => {
+  const checkClientQuery = 'SELECT COUNT(*) AS count FROM client WHERE nom = ? AND telephone = ?';
+  const insertClientQuery = 'INSERT INTO client(`nom`, `raison_sociale`, `adresse`, `email`, `telephone`, `id_province`, `avenue`, `quartier`, `commune`, `num`) VALUES(?,?,?,?,?,?,?,?,?,?)';
+  const insertAdresseQuery = 'INSERT INTO adresse(`id_client`, `id_ville`, `id_commune`, `avenue`, `quartier`, `num`, `ref`) VALUES(?,?,?,?,?,?,?)';
+  const insertTelephoneQuery = 'INSERT INTO telephone(`id_client`, `numero`) VALUES(?,?)';
+
+  const values = [
+    req.body.nom,
+    req.body.raison_sociale,
+    req.body.adresse,
+    req.body.email,
+    req.body.telephone,
+    req.body.id_province,
+    req.body.avenue,
+    req.body.quartier,
+    req.body.commune,
+    req.body.num
+  ];
+
+  db.getConnection((err, connection) => {
+    if (err) {
+      console.error("ERROR NETWORK:", err);
+      res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+      return;
+    }
+
+    connection.query(checkClientQuery, [req.body.nom, req.body.telephone], (error, result) => {
+      if (error) {
+        console.error("ERROR NETWORK:", error);
+        res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+        return;
+      }
+
+      const clientExists = result[0].count > 0;
+
+      if (clientExists) {
+        res.status(400).json({ message: 'Le client existe déjà avec ce nom et ce numéro de téléphone.' });
+        connection.release();
+      } else {
+        connection.beginTransaction((err) => {
+          if (err) {
+            console.error("ERROR NETWORK:", err);
+            res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+            connection.release();
+            return;
+          }
+
+          connection.query(insertClientQuery, values, (error, clientData) => {
+            if (error) {
+              console.error("ERROR NETWORK:", error);
+              return connection.rollback(() => {
+                res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                connection.release();
+              });
+            }
+
+            const clientId = clientData.insertId;
+            console.log('Inserted client ID:', clientId); // Debug log
+            const valuesAdresse = [
+              clientId,
+              req.body.id_province,
+              req.body.id_commune,
+              req.body.avenue,
+              req.body.quartier,
+              req.body.num,
+              req.body.ref
+            ];
+
+            connection.query(insertAdresseQuery, valuesAdresse, (error, adresseData) => {
+              if (error) {
+                console.error("ERROR NETWORK:", error);
+                return connection.rollback(() => {
+                  res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                  connection.release();
+                });
+              }
+
+              const valuesTelephone = [
+                clientId,
+                req.body.telephone
+              ];
+
+              console.log('Telephone values:', valuesTelephone); // Debug log
+              connection.query(insertTelephoneQuery, valuesTelephone, (error, telephoneData) => {
+                if (error) {
+                  console.error("ERROR NETWORK:", error);
+                  return connection.rollback(() => {
+                    res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                    connection.release();
+                  });
+                } else {
+                  connection.commit((err) => {
+                    if (err) {
+                      console.error("ERROR NETWORK:", err);
+                      return connection.rollback(() => {
+                        res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                        connection.release();
+                      });
+                    }
+                    res.json('Processus réussi');
+                    connection.release();
+                  });
+                }
+              });
+            });
+          });
+        });
+      }
+    });
   });
 };
 
