@@ -201,210 +201,6 @@ exports.getVenteRapports = (req, res) => {
   });
 };
 
-
-
-/* exports.postVente = (req, res) => {
-  const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
-  const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
-  const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
-  const qLivraison = "UPDATE detail_livraison SET vu_livreur = 1 WHERE id_varianteProduit = ?";
-  const qInsertMouvement = 'INSERT INTO mouvement_stock(`id_varianteProduit`, `id_type_mouvement`, `quantite`, `id_user_cr`, `id_client`, `id_fournisseur`, `description`) VALUES(?)';
-  const qUpdateMouv = `UPDATE mouvement_stock SET id_type_mouvement = ? WHERE id_varianteProduit = ?`;
-  const q = 'INSERT INTO vente(`id_client`, `id_livreur`, `quantite`, `id_commande`, `id_detail_commande`,`prix_unitaire`) VALUES(?,?,?,?,?,?)';
-  const qDette = 'INSERT INTO dette(`id_commande`, `montant_convenu`, `montant_paye`) VALUES(?,?,?)';
-
-  const values = [
-    req.body.id_client,
-    req.body.id_livreur,
-    req.body.quantite,
-    req.body.id_commande,
-    req.body.id_detail_commande,
-    req.body.prix_unitaire
-  ];
-
-  const valuesMouv = [
-    req.body.id_varianteProduit,
-    req.body.id_type_mouvement,
-    req.body.quantite,
-    req.body.id_user_cr,
-    req.body.id_client,
-    req.body.id_fournisseur,
-    req.body.description
-  ];
-
-  const valuesDette = [
-    req.body.id_commande,
-    req.body.montant_convenu,
-    req.body.montant_paye
-  ];
-
-  db.query(q, values, (error, data) => {
-    if (error) {
-      res.status(500).json(error);
-      console.log(error);
-    } else {
-      db.query(qUpdateMouv, [req.body.id_type_mouvement, req.body.id_varianteProduit], (error, mouvementData) => {
-        if (error) {
-          res.status(500).json(error);
-          console.log(error);
-        } else {
-          db.query(StatutLivre, [req.body.id_commande], (error, updateData) => {
-            if (error) {
-              res.status(500).json(error);
-              console.log(error);
-            } else {
-              db.query(qStockeTaille, [req.body.id_varianteProduit], (error, stockTailleData) => {
-                if (error) {
-                  res.status(500).json(error);
-                  console.log(error);
-                } else {
-                  const stockTailleActuel = stockTailleData[0].stock;
-                  let newStockTaille;
-
-                  if (parseInt(req.body.id_type_mouvement) === 4) {
-                    newStockTaille = stockTailleActuel;
-                  } else if (parseInt(req.body.id_type_mouvement) === 5) {
-                    newStockTaille = stockTailleActuel + parseInt(req.body.quantite);
-                  } else {
-                    newStockTaille = stockTailleActuel;
-                  }
-
-                  db.query(qUpdateStock, [newStockTaille, req.body.id_varianteProduit], (error, updateData) => {
-                    if (error) {
-                      res.status(500).json(error);
-                      console.log(error);
-                    } else {
-                      db.query(qLivraison, [req.body.id_varianteProduit], (error, updateData) => {
-                        if (error) {
-                          res.status(500).json(error);
-                          console.log(error);
-                        } else {
-                          if (req.body.montant_paye) {
-                            db.query(qDette, valuesDette, (error, updateData) => {
-                              if (error) {
-                                console.log(error)
-                                res.status(500).json(error);
-                              }
-                              res.json('Processus réussi');
-                            });
-                          } else {
-                            res.json('Processus réussi');
-                          }
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-   });
-}; */
-
-/* exports.postVente = (req, res) => {
-  const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
-  const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
-  const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
-  const qLivraison = "UPDATE detail_livraison SET vu_livreur = 1 WHERE id_varianteProduit = ?";
-  const qInsertMouvement = 'INSERT INTO mouvement_stock(`id_varianteProduit`, `id_type_mouvement`, `quantite`, `id_user_cr`, `id_client`, `id_fournisseur`, `description`) VALUES(?)';
-  const qUpdateMouv = `UPDATE mouvement_stock SET id_type_mouvement = ? WHERE id_varianteProduit = ?`;
-  const q = 'INSERT INTO vente(`id_client`, `id_livreur`, `quantite`, `id_commande`, `id_detail_commande`,`prix_unitaire`) VALUES(?,?,?,?,?,?)';
-  const qDette = 'INSERT INTO dette(`id_commande`, `montant_convenu`, `montant_paye`) VALUES(?,?,?)';
-
-  const values = [
-    req.body.id_client,
-    req.body.id_livreur,
-    req.body.quantite,
-    req.body.id_commande,
-    req.body.id_detail_commande,
-    req.body.prix_unitaire
-  ];
-
-  const valuesMouv = [
-    req.body.id_varianteProduit,
-    req.body.id_type_mouvement,
-    req.body.quantite,
-    req.body.id_user_cr,
-    req.body.id_client,
-    req.body.id_fournisseur,
-    req.body.description
-  ];
-
-  const valuesDette = [
-    req.body.id_commande,
-    req.body.montant_convenu,
-    req.body.montant_paye
-  ];
-
-  db.query(q, values, (error, data) => {
-    if (error) {
-      res.status(500).json(error);
-      console.log(error);
-    } else {
-      db.query(qUpdateMouv, [req.body.id_type_mouvement, req.body.id_varianteProduit], (error, mouvementData) => {
-        if (error) {
-          res.status(500).json(error);
-          console.log(error);
-        } else {
-          db.query(StatutLivre, [req.body.id_commande], (error, updateData) => {
-            if (error) {
-              res.status(500).json(error);
-              console.log(error);
-            } else {
-              db.query(qStockeTaille, [req.body.id_varianteProduit], (error, stockTailleData) => {
-                if (error) {
-                  res.status(500).json(error);
-                  console.log(error);
-                } else {
-                  const stockTailleActuel = stockTailleData[0].stock;
-                  let newStockTaille;
-
-                  if (parseInt(req.body.id_type_mouvement) === 4) {
-                    newStockTaille = stockTailleActuel;
-                  } else if (parseInt(req.body.id_type_mouvement) === 5) {
-                    newStockTaille = stockTailleActuel + parseInt(req.body.quantite);
-                  } else {
-                    newStockTaille = stockTailleActuel;
-                  }
-
-                  db.query(qUpdateStock, [newStockTaille, req.body.id_varianteProduit], (error, updateData) => {
-                    if (error) {
-                      res.status(500).json(error);
-                      console.log(error);
-                    } else {
-                      db.query(qLivraison, [req.body.id_varianteProduit], (error, updateData) => {
-                        if (error) {
-                          res.status(500).json(error);
-                          console.log(error);
-                        } else {
-                          if (req.body.montant_paye) {
-                            db.query(qDette, valuesDette, (error, updateData) => {
-                              if (error) {
-                                console.log(error)
-                                res.status(500).json(error);
-                              }
-                              res.json('Processus réussi');
-                            });
-                          } else {
-                            res.json('Processus réussi');
-                          }
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
-          });
-        }
-      });
-    }
-  });
-}; */
-
 /* exports.postVente = (req, res) => {
   const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
   const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
@@ -523,7 +319,7 @@ exports.getVenteRapports = (req, res) => {
   });
 }; */
 
-exports.postVente = (req, res) => {
+/* exports.postVente = (req, res) => {
   const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
   const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
   const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
@@ -700,8 +496,187 @@ exports.postVente = (req, res) => {
       });
     });
   });
-};
+}; */
 
+exports.postVente = (req, res) => {
+  const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
+  const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
+  const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
+  const qLivraison = "UPDATE detail_livraison SET vu_livreur = 1 WHERE id_varianteProduit = ? AND id_commande = ?";
+  const qUpdateMouv = `UPDATE mouvement_stock SET id_type_mouvement = ? WHERE id_varianteProduit = ?`;
+  const q = 'INSERT INTO vente(`id_client`, `id_livreur`, `quantite`, `id_commande`, `id_detail_commande`,`prix_unitaire`) VALUES(?,?,?,?,?,?)';
+  const qDette = 'INSERT INTO dette(`id_commande`, `montant_convenu`, `montant_paye`) VALUES(?,?,?)';
+  const qCheckVente = 'SELECT id_detail_commande FROM vente WHERE id_detail_commande = ?';
+
+  const values = [
+    req.body.id_client,
+    req.body.id_livreur,
+    req.body.quantite,
+    req.body.id_commande,
+    req.body.id_detail_commande,
+    req.body.prix_unitaire
+  ];
+
+  const valuesDette = [
+    req.body.id_commande,
+    req.body.montant_convenu,
+    req.body.montant_paye
+  ];
+
+  db.getConnection((error, connection) => {
+    if (error) {
+      res.status(500).json({ error: 'Erreur lors de la connexion à la base de données' });
+      console.log(error);
+      return;
+    }
+
+    connection.beginTransaction(err => {
+      if (err) {
+        res.status(500).json({ error: 'Erreur lors du démarrage de la transaction' });
+        console.log(err);
+        connection.release();
+        return;
+      }
+
+      connection.query(qCheckVente, [req.body.id_detail_commande], (error, checkData) => {
+        if (error) {
+          connection.rollback(() => {
+            res.status(500).json({ error: 'Erreur lors de la vérification de la ventilation' });
+            console.log(error);
+            connection.release();
+          });
+          return;
+        }
+
+        if (checkData && checkData.length > 0) {
+          connection.rollback(() => {
+            res.json('L\'enregistrement existe déjà dans la table vente');
+            connection.release();
+          });
+          return;
+        }
+
+        connection.query(q, values, (error) => {
+          if (error) {
+            connection.rollback(() => {
+              res.status(500).json({ error: "Erreur lors de l'insertion de la ventilation" });
+              console.log(error);
+              connection.release();
+            });
+            return;
+          }
+
+          connection.query(qUpdateMouv, [req.body.id_type_mouvement, req.body.id_varianteProduit], (error) => {
+            if (error) {
+              connection.rollback(() => {
+                res.status(500).json({ error: 'Erreur lors de la mise à jour de mouvement_stock' });
+                console.log(error);
+                connection.release();
+              });
+              return;
+            }
+
+            connection.query(StatutLivre, [req.body.id_commande], (error) => {
+              if (error) {
+                connection.rollback(() => {
+                  res.status(500).json({ error: 'Erreur lors de la mise à jour de la commande' });
+                  console.log(error);
+                  connection.release();
+                });
+                return;
+              }
+
+              connection.query(qStockeTaille, [req.body.id_varianteProduit], (error, stockTailleData) => {
+                if (error) {
+                  connection.rollback(() => {
+                    res.status(500).json({ error: "Erreur lors de la récupération du stock" });
+                    console.log(error);
+                    connection.release();
+                  });
+                  return;
+                }
+
+                const stockTailleActuel = stockTailleData[0].stock;
+                let newStockTaille;
+
+                if (parseInt(req.body.id_type_mouvement) === 4) {
+                  newStockTaille = stockTailleActuel;
+                } else if (parseInt(req.body.id_type_mouvement) === 5) {
+                  newStockTaille = stockTailleActuel + parseInt(req.body.quantite);
+                } else {
+                  newStockTaille = stockTailleActuel;
+                }
+
+                connection.query(qUpdateStock, [newStockTaille, req.body.id_varianteProduit], (error) => {
+                  if (error) {
+                    connection.rollback(() => {
+                      res.status(500).json({ error: 'Erreur lors de la mise à jour du stock' });
+                      console.log(error);
+                      connection.release();
+                    });
+                    return;
+                  }
+
+                  connection.query(qLivraison, [req.body.id_varianteProduit,req.body.id_commande], (error) => {
+                    if (error) {
+                      connection.rollback(() => {
+                        res.status(500).json({ error: "Erreur lors de la mise à jour de la livraison" });
+                        console.log(error);
+                        connection.release();
+                      });
+                      return;
+                    }
+
+                    if (req.body.montant_paye) {
+                      connection.query(qDette, valuesDette, (error) => {
+                        if (error) {
+                          connection.rollback(() => {
+                            res.status(500).json({ error: 'Error inserting dette' });
+                            console.log(error);
+                            connection.release();
+                          });
+                          return;
+                        }
+
+                        connection.commit(err => {
+                          if (err) {
+                            connection.rollback(() => {
+                              res.status(500).json({ error: 'Erreur lors de la validation de la transaction' });
+                              console.log(err);
+                              connection.release();
+                            });
+                            return;
+                          }
+
+                          res.json('Processus réussi');
+                          connection.release();
+                        });
+                      });
+                    } else {
+                      connection.commit(err => {
+                        if (err) {
+                          connection.rollback(() => {
+                            res.status(500).json({ error: 'Erreur lors de la validation de la transaction' });
+                            console.log(err);
+                            connection.release();
+                          });
+                          return;
+                        }
+
+                        res.json('Processus réussi');
+                        connection.release();
+                      });
+                    }
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+};
 
 
 /* exports.envoiEmail = (req, res) => {
