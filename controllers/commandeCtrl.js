@@ -278,11 +278,23 @@ exports.getCommande = (req, res) => {
   const start_date = req.query.date_start;
   const end_date = req.query.date_end;
 
-  let q = `SELECT commande.*, client.nom, statut.nom_statut
+  let q = `SELECT commande.*, client.nom, statut.nom_statut, IFNULL(nbre_ventes.nbre_vente, 0) AS nbre_vente
             FROM commande
             INNER JOIN client ON commande.id_client = client.id
             INNER JOIN statut ON commande.statut = statut.id_statut
-            WHERE commande.est_supprime = 0`;
+            LEFT JOIN (
+                SELECT 
+                	id_commande,
+                	COUNT(id_commande) AS nbre_vente
+                FROM
+                	vente
+                GROUP BY
+        			id_commande
+            	) AS nbre_ventes
+             ON
+             	commande.id_commande = nbre_ventes.id_commande
+            WHERE commande.est_supprime = 0
+          `;
 
   const params = [];
 
