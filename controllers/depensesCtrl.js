@@ -281,7 +281,6 @@ exports.depenseTotal = (req, res) => {
         let q = `SELECT SUM(montant) AS total_depense
                  FROM depenses
                  WHERE est_supprime = 0`;
-      
         if (start_date) {
           q += ` AND DATE(depenses.date_depense) >= '${start_date}'`;
         }
