@@ -412,26 +412,41 @@ exports.caisseMouvementCountJour = (req, res) => {
   };
 
 
-exports.caisseDetteRapportNbreJour = (req, res) => {
-  const { start_date, end_date } = req.query;
-
-  const q = `SELECT 
-              SUM(dette.montant_convenu - dette.montant_paye) AS montant_total_restant,
-              COUNT(DISTINCT commande.id_client) AS nombre_total_clients_dette,
-              MAX(dette.created_at) AS date_plus_recente,
-              MIN(dette.created_at) AS date_derniere_dette
-            FROM dette
-            INNER JOIN commande ON dette.id_commande = commande.id_commande
-            WHERE ${start_date ? `DATE(dette.created_at) >= '${start_date}'` : ''}
-            ${end_date ? `AND DATE(dette.created_at) <= '${end_date}'` : ''}`;
-
-  db.query(q, (error, data) => {
-    if (error) {
-      return res.status(500).send(error);
+  exports.caisseDetteRapportNbreJour = (req, res) => {
+    const { start_date, end_date } = req.query;
+  
+    let q = `SELECT 
+                SUM(dette.montant_convenu - dette.montant_paye) AS montant_total_restant,
+                COUNT(DISTINCT commande.id_client) AS nombre_total_clients_dette,
+                MAX(dette.created_at) AS date_plus_recente,
+                MIN(dette.created_at) AS date_derniere_dette
+              FROM dette
+              INNER JOIN commande ON dette.id_commande = commande.id_commande
+              WHERE 1=1 `; 
+  
+    if (start_date) {
+      q += ` AND DATE(dette.created_at) >= ?`;
     }
-    return res.status(200).json(data);
-  });
-};
+    
+    if (end_date) {
+      q += ` AND DATE(dette.created_at) <= ?`;
+    }
+  
+    const params = [];
+    if (start_date) {
+      params.push(start_date);
+    }
+    if (end_date) {
+      params.push(end_date);
+    }
+  
+    db.query(q, params, (error, data) => {
+      if (error) {
+        return res.status(500).send(error);
+      }
+      return res.status(200).json(data);
+    });
+  };
 
 exports.caissePaiementJourMontant = (req, res) => {
   const { start_date, end_date } = req.query;

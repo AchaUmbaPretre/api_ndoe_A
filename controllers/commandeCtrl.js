@@ -278,6 +278,7 @@ exports.getCommande = (req, res) => {
   const start_date = req.query.date_start;
   const end_date = req.query.date_end;
 
+  // Initialisez la requête SQL de base
   let q = `SELECT commande.*, client.nom, statut.nom_statut, IFNULL(nbre_ventes.nbre_vente, 0) AS nbre_vente
             FROM commande
             INNER JOIN client ON commande.id_client = client.id
@@ -294,16 +295,16 @@ exports.getCommande = (req, res) => {
              ON
              	commande.id_commande = nbre_ventes.id_commande
             WHERE commande.est_supprime = 0
-          `;
+           `;
 
   const params = [];
 
-  if (start_date !== undefined && start_date !== '') {
+  if (start_date && start_date !== 'null') {
     q += ` AND DATE(commande.date_commande) >= ?`;
     params.push(start_date);
   }
 
-  if (end_date !== undefined && end_date !== '' && end_date !== 'undefined') {
+  if (end_date && end_date !== 'null' && end_date !== 'undefined') {
     q += ` AND DATE(commande.date_commande) <= ?`;
     params.push(end_date);
   }
@@ -311,10 +312,14 @@ exports.getCommande = (req, res) => {
   q += ` ORDER BY commande.date_commande DESC`;
 
   db.query(q, params, (error, data) => {
-    if (error) res.status(500).send(error);
+    if (error) {
+      console.error(error);
+      return res.status(500).send(error);
+    }
     return res.status(200).json(data);
   });
 };
+
 
 
 exports.getCommandeRapportFiltrer = (req, res) => {

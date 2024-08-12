@@ -5,7 +5,7 @@ const nodemailer = require('nodemailer');
 
 dotenv.config();
 
-exports.getVente = (req, res) => {
+/* exports.getVente = (req, res) => {
   const { start_date, end_date } = req.query;
 
     const q = `
@@ -33,6 +33,44 @@ exports.getVente = (req, res) => {
         if (error) res.status(500).send(error);
         return res.status(200).json(data);
     });
+} */
+
+exports.getVente = (req, res) => {
+  const { start_date, end_date } = req.query;
+
+  let dateFilters = '';
+
+  if (start_date && start_date !== 'null') {
+    dateFilters += `AND DATE(vente.date_vente) >= '${start_date}' `;
+  }
+  if (end_date && end_date !== 'null') {
+    dateFilters += `AND DATE(vente.date_vente) <= '${end_date}' `;
+  }
+
+  const q = `
+      SELECT vente.*, users.username, varianteproduit.img, client.nom AS nom_client, client.telephone, marque.nom AS nom_marque, taille.taille AS pointure,
+          SUM(vente.quantite) AS total_varianteproduit,
+          SUM(vente.prix_unitaire) AS total_prix_vente, commande.id_shop,
+          COUNT(*) AS nombre_vendu
+      FROM vente
+      INNER JOIN users ON vente.id_livreur = users.id
+      INNER JOIN detail_commande ON vente.id_detail_commande = detail_commande.id_detail
+      INNER JOIN varianteproduit ON varianteproduit.id_varianteProduit = detail_commande.id_varianteProduit
+      INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+      INNER JOIN marque ON produit.id_marque = marque.id_marque
+      INNER JOIN commande ON vente.id_commande = commande.id_commande
+      INNER JOIN client ON commande.id_client = client.id
+      INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+      WHERE vente.est_supprime = 0
+        ${dateFilters}  
+      GROUP BY commande.id_commande
+      ORDER BY vente.date_vente DESC;
+  `;
+   
+  db.query(q, (error, data) => {
+      if (error) return res.status(500).send(error);
+      return res.status(200).json(data);
+  });
 }
 
 exports.getVenteAjour = (req, res) => {
