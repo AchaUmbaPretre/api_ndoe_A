@@ -211,6 +211,24 @@ exports.getDepense1an = (req, res) => {
   });
 }
 
+exports.getDepenseRapportGlobal = (req, res) => {
+
+  const q = `SELECT 
+              MIN(depenses.date_depense) AS date_plus_ancienne,
+              MAX(depenses.date_depense) AS date_plus_recente,
+              CASE
+                WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+                ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+              END AS total_depense
+              FROM depenses
+            `;
+   
+  db.query(q, (error, data) => {
+      if (error) res.status(500).send(error);
+      return res.status(200).json(data);
+  });
+}
+
 exports.postDepense = (req, res) => {
     const q = 'INSERT INTO depenses(`id_livreur`, `id_catDepense`, `date_depense`, `montant`, `montant_franc`, `description`,`user_cr`) VALUES(?,?,?,?,?,?,?)';
     const values = [

@@ -1,5 +1,5 @@
 const express = require("express");
-const { getCatDepense, postCatDepense, deleteCatDepense, getDepense, postDepense, deleteDepense, depenseTotal, caisseVenteCount, caisseCommandeCount, caisseLivraisonNbreDuJours, caisseClientCount, caisseMouvementCountJour, caisseDetteRapportNbreJour, caissePaiementJourMontant, getDepenseDate,getDepenseJour,getDepenseHier,getDepense7jours,getDepense30jours,getDepense1an,caisseDepenseTotalCount } = require("../controllers/depensesCtrl");
+const { getCatDepense, postCatDepense, deleteCatDepense, getDepense, postDepense, deleteDepense, depenseTotal, caisseVenteCount, caisseCommandeCount, caisseLivraisonNbreDuJours, caisseClientCount, caisseMouvementCountJour, caisseDetteRapportNbreJour, caissePaiementJourMontant, getDepenseDate,getDepenseJour,getDepenseHier,getDepense7jours,getDepense30jours,getDepense1an,caisseDepenseTotalCount, getDepenseRapportGlobal } = require("../controllers/depensesCtrl");
 const router = express.Router();
 
 
@@ -15,6 +15,7 @@ router.get('/depenseDhier',getDepenseHier )
 router.get('/depense7jours',getDepense7jours)
 router.get('/depense30jours',getDepense30jours )
 router.get('/depense1an',getDepense1an )
+router.get('/depenseRapportChiffre',getDepenseRapportGlobal )
 router.post('/',postDepense)
 router.delete('/:id',deleteDepense)
 

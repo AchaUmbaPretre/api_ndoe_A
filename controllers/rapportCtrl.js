@@ -139,7 +139,8 @@ exports.getRapportDateRecenteJour = (req, res) => {
           MAX(v.date_vente) AS date_plus_recente,
           SUM(v.quantite) AS nbre_article_vendue,
           COUNT(DISTINCT v.id_client) AS nbre_de_vente,
-          COUNT(DISTINCT v.id_commande) AS nbre_commande
+          COUNT(DISTINCT v.id_commande) AS nbre_commande,
+          SUM(v.prix_unitaire) AS montant_total
         FROM vente v
         WHERE v.est_supprime = 0 AND DATE(v.date_vente) = CURDATE()
         `;
