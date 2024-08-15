@@ -130,7 +130,6 @@ exports.getDepenseJour = (req, res) => {
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) = CURDATE()
-              GROUP BY DATE(depenses.date_depense)
               `;
    
   db.query(q, (error, data) => {
@@ -148,7 +147,6 @@ exports.getDepenseHier = (req, res) => {
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) =  DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-              GROUP BY DATE(depenses.date_depense)
               `;
    
   db.query(q, (error, data) => {
@@ -166,7 +164,6 @@ exports.getDepense7jours = (req, res) => {
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-              GROUP BY DATE(depenses.date_depense)
             `;
    
   db.query(q, (error, data) => {
@@ -184,7 +181,6 @@ exports.getDepense30jours = (req, res) => {
               END AS total_depense
               FROM depenses
                 WHERE DATE(depenses.date_depense) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-              GROUP BY DATE(depenses.date_depense)
               `;
    
   db.query(q, (error, data) => {
@@ -202,7 +198,6 @@ exports.getDepense1an = (req, res) => {
             END AS total_depense
             FROM depenses
               WHERE DATE(depenses.date_depense) >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-            GROUP BY DATE(depenses.date_depense)
               `;
    
   db.query(q, (error, data) => {
@@ -412,7 +407,7 @@ exports.caisseMouvementCountJour = (req, res) => {
   };
 
 
-  exports.caisseDetteRapportNbreJour = (req, res) => {
+exports.caisseDetteRapportNbreJour = (req, res) => {
     const { start_date, end_date } = req.query;
   
     let q = `SELECT 
@@ -448,38 +443,62 @@ exports.caisseMouvementCountJour = (req, res) => {
     });
   };
 
-exports.caissePaiementJourMontant = (req, res) => {
-  const { start_date, end_date } = req.query;
-  const q = `
-    SELECT SUM(paiement.montant) AS montant_total
-    FROM paiement
-    WHERE 
-      ${start_date ? `DATE(paiement.created_at) >= '${start_date}'` : ''}
-      ${end_date ? `AND DATE(paiement.created_at) <= '${end_date}'` : ''}
+  exports.caissePaiementJourMontant = (req, res) => {
+    const { start_date, end_date } = req.query;
+  
+    let q = `
+      SELECT SUM(paiement.montant) AS montant_total
+      FROM paiement
+      WHERE 1=1
+    `;
+  
+    const params = [];
+    if (start_date) {
+      q += ` AND DATE(paiement.created_at) >= ?`;
+      params.push(start_date);
+    }
+  
+    if (end_date) {
+      q += ` AND DATE(paiement.created_at) <= ?`;
+      params.push(end_date);
+    }
+  
+    db.query(q, params, (error, data) => {
+      if (error) {
+        console.error('Une erreur s\'est produite lors de l\'exécution de la requête SQL :', error);
+        return res.status(500).json({ error: 'Erreur du serveur lors de la récupération des données.' });
+      }
+      return res.status(200).json(data);
+    });
+  };
+
+exports.caisseDepenseTotalCount = (req, res) => {
+  const { date_start, date_end } = req.query;
+
+  let query = `
+    SELECT 
+      CASE
+        WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00035), 2)
+        ELSE ROUND(SUM(depenses.montant_franc * 0.00035), 2)
+      END AS total_depense
+    FROM depenses
+    WHERE 1=1
   `;
 
-  db.query(q, (error, data) => {
+  const values = [];
+  if (date_start) {
+    query += ` AND depenses.date_depense >= ?`;
+    values.push(`${date_start} 00:00:00`);
+  }
+  if (date_end) {
+    query += ` AND depenses.date_depense <= ?`;
+    values.push(`${date_end} 23:59:59`);
+  }
+
+  db.query(query, values, (error, data) => {
     if (error) {
-      console.error('Une erreur s\'est produite lors de l\'exécution de la requête SQL :', error);
-      return res.status(500).json({ error: 'Erreur du serveur lors de la récupération des données.' });
+      return res.status(500).send(error);
     }
     return res.status(200).json(data);
   });
 };
-
-
-exports.caisseDepenseTotalCount = (req, res) => {
-  const {start_date, end_date} = req.query;
-
-  const q = `SELECT SUM(montant) AS total_depense FROM depenses
-  est_supprime = 0
-  ${start_date ? `AND DATE(depenses.date_depense) >= '${start_date}'` : ''}
-  ${end_date ? `AND DATE(depenses.date_depense) <= '${end_date}'` : ''} 
-          `;
-
-    db.query(q ,(error, data)=>{
-      if(error) res.status(500).send(error)
-  
-      return res.status(200).json(data);
-    })
-}

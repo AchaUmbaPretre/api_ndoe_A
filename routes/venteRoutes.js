@@ -1,5 +1,5 @@
 const express = require("express");
-const { getVente, postVente, deleteVente, putVente, postVenteRetour, getVenteOne, getVenteCount, getDette, deleteDette, putDette, getPaiement, deletePaiement, postPaiement, getDetteOne, envoiEmail, getOptions, postEchangeLivraison, getDetteRapport, getDetteJour, getDetteJour7, getDetteJour30, postVenteEchange, getDettePaiement, getVenteAjour, getPaiementJour, getPaiementJour7, getPaiementJour30, getDetteRapportNbreJour, getDetteRapportNbreJour7, getDetteRapportNbreJour30, getVenteAjour7, getVenteAjour30, getVenteAjour1an, getVenteCountDuJour, getPaiementJourMontant, getPaiementJourMontant7, getPaiementJourMontant30, getPaiementJourMontant1an, getDetteRapportNbreJour1an, getVenteHier, getPaiementHier, getDetteRapportNbreHier, getPaiementHierMontant,getVenteRapports, getDetteRapports, getPaiementRapport } = require("../controllers/venteCtrl");
+const { getVente, postVente, deleteVente, putVente, postVenteRetour, getVenteOne, getVenteCount, getDette, deleteDette, putDette, getPaiement, deletePaiement, postPaiement, getDetteOne, envoiEmail, getOptions, postEchangeLivraison, getDetteRapport, getDetteJour, getDetteJour7, getDetteJour30, postVenteEchange, getDettePaiement, getVenteAjour, getPaiementJour, getPaiementJour7, getPaiementJour30, getDetteRapportNbreJour, getDetteRapportNbreJour7, getDetteRapportNbreJour30, getVenteAjour7, getVenteAjour30, getVenteAjour1an, getVenteCountDuJour, getPaiementJourMontant, getPaiementJourMontant7, getPaiementJourMontant30, getPaiementJourMontant1an, getDetteRapportNbreJour1an, getVenteHier, getPaiementHier, getDetteRapportNbreHier, getPaiementHierMontant,getVenteRapports, getDetteRapports, getPaiementRapport,getVentePointures } = require("../controllers/venteCtrl");
 const router = express.Router();
 
 
@@ -14,6 +14,7 @@ router.get('/venteDuJour1an', getVenteAjour1an)
 router.get('/venteCount',getVenteCount)
 router.get('/:id', getVenteOne)
 router.get('/vente_rapport/rapport', getVenteRapports)
+router.get('/ventePointure/vente', getVentePointures)
 router.post('/', postVente)
 router.post('/venteMail', envoiEmail)
 router.post('/retour', postVenteRetour)

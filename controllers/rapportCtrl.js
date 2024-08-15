@@ -518,6 +518,46 @@ exports.getRapportVenteAll = (req, res) => {
     }
   };
 
+exports.getRapportVenteAllCat = (req, res) => {
+    const { id_cat } = req.query;
+  
+    let q = `
+    SELECT
+    m.id_marque,
+    SUM(v.quantite) AS quantite_vendue,
+    SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
+    vp.stock AS quantite_en_stock,
+    vp.img,
+    taille.taille,
+    m.nom AS nom_marque,
+    categorie.nom_categorie,
+    couleur.description,
+    v.date_vente
+  FROM vente v
+  INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
+  INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
+  INNER JOIN produit p ON vp.id_produit = p.id_produit
+  INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
+  INNER JOIN marque m ON p.id_marque = m.id_marque
+  INNER JOIN taille ON vp.id_taille = taille.id_taille
+  INNER JOIN categorie ON p.id_categorie = categorie.id_categorie
+  WHERE v.est_supprime = 0 AND categorie.id_categorie = ${id_cat} 
+    GROUP BY taille.id_taille, vp.code_variant; 
+    `;
+  
+    try {
+      db.query(q, (error, data) => {
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+  
+        return res.status(200).json(data);
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+
 exports.getRapportVenteAllRap = (req, res) => {
     const { id_marque } = req.params;
   
@@ -535,6 +575,38 @@ exports.getRapportVenteAllRap = (req, res) => {
           INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
           INNER JOIN marque m ON p.id_marque = m.id_marque
         WHERE v.est_supprime = 0 AND m.id_marque = ${id_marque}
+    `;
+  
+    try {
+      db.query(q, (error, data) => {
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+  
+        return res.status(200).json(data);
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+
+exports.getRapportVenteAllRapCat = (req, res) => {
+    const { id_cat } = req.query;
+  
+    let q = `
+        SELECT
+          MIN(v.date_vente) AS date_plus_ancienne,
+          MAX(v.date_vente) AS date_plus_recente,
+          SUM(v.quantite) AS nbre_article_vendue,
+          COUNT(DISTINCT v.id_client) AS nbre_de_vente,
+          COUNT(DISTINCT v.id_commande) AS nbre_commande
+        FROM vente v
+         INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
+          INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
+          INNER JOIN produit p ON vp.id_produit = p.id_produit
+          INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
+          INNER JOIN categorie c ON p.id_categorie = c.id_categorie
+        WHERE v.est_supprime = 0 AND  c.id_categorie = ${id_cat}
     `;
   
     try {
@@ -591,6 +663,53 @@ exports.getRapportVenteSearch = (req, res) => {
       return res.status(500).json({ error: error.message });
     }
   };
+
+exports.getRapportVenteCat = (req, res) => {
+    const { start_date, end_date, id_cat } = req.query;
+  
+    let q = `
+      SELECT 
+        SUM(v.quantite) AS quantite_vendue,
+        SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
+        SUM(vp.stock) AS quantite_en_stock,
+        COUNT(DISTINCT v.id_commande) AS nombre_vendu,
+        (
+          SELECT SUM(vp2.stock) 
+          FROM varianteproduit vp2
+          INNER JOIN produit p2 ON vp2.id_produit = p2.id_produit
+          INNER JOIN categorie c2 ON p2.id_categorie = c2.id_categorie
+          WHERE vp2.est_supprime = 0 
+            AND c2.id_categorie = categorie.id_categorie
+        ) AS total_chaussures_en_stock,
+        categorie.nom_categorie,
+        categorie.id_categorie
+      FROM vente v
+      INNER JOIN detail_commande dc ON v.id_detail_commande = dc.id_detail
+      INNER JOIN varianteproduit vp ON dc.id_varianteProduit = vp.id_varianteProduit
+      INNER JOIN produit p ON vp.id_produit = p.id_produit
+      INNER JOIN taille t ON vp.id_taille = t.id_taille
+      INNER JOIN categorie categorie ON p.id_categorie = categorie.id_categorie
+      WHERE v.est_supprime = 0
+        ${start_date ? `AND v.date_vente >= '${start_date}'` : ''}
+        ${end_date ? `AND v.date_vente <= '${end_date}'` : ''}
+        ${id_cat ? `AND categorie.id_categorie = ${db.escape(id_cat)}` : ''}
+      GROUP BY categorie.id_categorie, categorie.nom_categorie
+    `;
+  
+    try {
+      db.query(q, (error, data) => {
+        if (error) {
+          return res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+        }
+  
+        return res.status(200).json(data);
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+  
+
 
 /* exports.getRapportVenteCouleur = (req, res) => {
     const { start_date, end_date } = req.query;
@@ -1054,6 +1173,65 @@ exports.getRapportRevenu = (req, res) => {
     }
   };
 
+/* exports.getRapportRevenuAllDays = (req, res) => {
+    const { months } = req.query;
+    
+    let q = `
+      SELECT
+        DATE(date_vente) AS date_vente,
+        SUM(prix_unitaire) AS revenu_total
+      FROM vente
+      WHERE vente.est_supprime = 0
+        ${months ? `AND YEAR(date_vente) = '${months}'` : ''}
+      GROUP BY DATE(date_vente)
+      ORDER BY DATE(date_vente);
+    `;
+    
+    try {
+      db.query(q, (error, data) => {
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+  
+        return res.status(200).json(data);
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }; */
+
+exports.getRapportRevenuAllDays = (req, res) => {
+    const { months } = req.query;
+  
+    let q = `
+      SELECT
+        DATE_FORMAT(date_vente, '%Y-%m-%d') AS date_vente,
+        SUM(quantite) AS quantite_vendue,
+        SUM(prix_unitaire) AS revenu_total,
+        COUNT(DISTINCT id_commande) AS nombre_vente,
+        AVG(prix_unitaire) AS revenu_moyen_par_vente
+      FROM vente
+      WHERE est_supprime = 0
+        ${months ? `AND DATE_FORMAT(date_vente, '%Y-%m') = '${months}'` : ''}
+      GROUP BY DATE_FORMAT(date_vente, '%Y-%m-%d')
+      ORDER BY DATE_FORMAT(date_vente, '%Y-%m-%d');
+    `;
+  
+    try {
+      db.query(q, (error, data) => {
+        if (error) {
+          return res.status(500).json({ error: error.message });
+        }
+  
+        return res.status(200).json(data);
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  };
+  
+  
+
 exports.getRapportRevenuRapDuMois = (req, res) => {
     
       let q = `
@@ -1166,9 +1344,10 @@ exports.getAchatsTotalDuel = (req, res) => {
 exports.getVenteTotal = (req, res) => {
   const { start_date, end_date, filter, year } = req.query;
 
-  let q = `SELECT SUM(prix_unitaire) AS montant_total_vente
-           FROM vente
-           WHERE vente.est_supprime = 0`;
+  let q = `SELECT SUM(prix_unitaire * quantite) AS montant_total_vente
+              FROM vente
+            WHERE est_supprime = 0;
+            `;
 
   if (start_date) {
     q += ` AND DATE(vente.date_vente) >= '${start_date}'`;
@@ -1290,3 +1469,104 @@ exports.getVenteMois = (req, res) => {
       return res.status(200).json(data);
   })
   }
+
+
+exports.getDepenseRapportGraphique = (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    // Requête pour obtenir les dépenses mensuelles
+    const qMonthly = `
+      SELECT 
+        DATE_FORMAT(depenses.date_depense, '%Y-%m') AS mois,
+        ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2) AS total_mensuel
+      FROM depenses
+      GROUP BY mois
+      ORDER BY mois;
+    `;
+
+    // Construire la requête SQL pour obtenir le total sur plusieurs mois
+    let qTotalPeriod = `
+      SELECT 
+        DATE(depenses.date_depense) AS date,
+        ROUND(SUM(COALESCE(depenses.montant, 0)), 2) + 
+        ROUND(SUM(COALESCE(depenses.montant_franc, 0) * 0.00036364), 2) AS total_periode
+      FROM depenses
+    `;
+    
+    // Ajouter les conditions de filtrage par date si elles sont présentes
+    if (startDate && endDate) {
+        qTotalPeriod += `
+          WHERE depenses.date_depense BETWEEN ? AND ?
+        `;
+    }
+
+    qTotalPeriod += `
+      GROUP BY DATE(depenses.date_depense);
+    `;
+
+    // Requête pour obtenir la moyenne des dépenses journalières
+    const qDailyAvg = `
+      SELECT 
+        ROUND(AVG(daily_total), 2) AS moyenne_journaliere
+      FROM (
+        SELECT 
+          DATE(depenses.date_depense) AS jour,
+          ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2) AS daily_total
+        FROM depenses
+        GROUP BY jour
+      ) AS daily_totals;
+    `;
+
+    // Requête pour obtenir les dépenses par bénéficiaire
+    const qByBeneficiary = `
+      SELECT 
+          users.username AS beneficiaire,
+          ROUND(SUM(COALESCE(depenses.montant, 0)), 2) + ROUND(SUM(COALESCE(depenses.montant_franc, 0) * 0.00036364), 2) AS total_beneficiaire
+      FROM depenses
+      LEFT JOIN users ON depenses.id_livreur = users.id
+      GROUP BY depenses.id_livreur;
+    `;
+
+    // Requête pour obtenir les dépenses par type
+    const qByType = `
+      SELECT 
+        categorie_depense.nom AS type,
+        ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2) AS total_type
+      FROM depenses
+      INNER JOIN categorie_depense ON depenses.id_catDepense = categorie_depense.id_catDepense
+      GROUP BY depenses.id_catDepense;
+    `;
+
+    // Définir les paramètres pour la requête de total par période
+    const queryParams = startDate && endDate ? [startDate, endDate] : [];
+
+    // Exécuter les requêtes
+    db.query(qMonthly, (error, monthlyData) => {
+        if (error) return res.status(500).send(error);
+
+        db.query(qTotalPeriod, queryParams, (error, totalPeriodData) => {
+            if (error) return res.status(500).send(error);
+
+            db.query(qDailyAvg, (error, dailyAvgData) => {
+                if (error) return res.status(500).send(error);
+
+                db.query(qByBeneficiary, (error, beneficiaryData) => {
+                    if (error) return res.status(500).send(error);
+
+                    db.query(qByType, (error, typeData) => {
+                        if (error) return res.status(500).send(error);
+
+                        res.status(200).json({
+                            monthlyData,
+                            totalPeriodData,
+                            dailyAvgData,
+                            beneficiaryData,
+                            typeData,
+                        });
+                    });
+                });
+            });
+        });
+    });
+};
+  

@@ -239,6 +239,41 @@ exports.getVenteRapports = (req, res) => {
   });
 };
 
+exports.getVentePointures = (req, res) => {
+  const { id_variant } = req.query;
+
+  let dateFilters = '';
+
+  if (id_variant && id_variant !== 'null') {
+    dateFilters += `AND detail_commande.id_varianteProduit = ${id_variant} `;
+  }
+
+  const q = `
+    SELECT vente.id_commande, users.username, varianteproduit.img, client.nom AS nom_client, client.telephone, marque.nom AS nom_marque, taille.taille AS pointure,vente.date_vente,
+        vente.quantite AS nombre_vendu,
+        vente.prix_unitaire AS prix_vente, commande.id_shop
+    FROM vente
+    INNER JOIN users ON vente.id_livreur = users.id
+    INNER JOIN detail_commande ON vente.id_detail_commande = detail_commande.id_detail
+    INNER JOIN varianteproduit ON varianteproduit.id_varianteProduit = detail_commande.id_varianteProduit
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN commande ON vente.id_commande = commande.id_commande
+    INNER JOIN client ON commande.id_client = client.id
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    WHERE vente.est_supprime = 0
+      ${dateFilters}
+    GROUP BY vente.id_commande, users.username, varianteproduit.img, client.nom, client.telephone, marque.nom, taille.taille, commande.id_shop
+    ORDER BY vente.date_vente DESC;
+`;
+
+   
+  db.query(q, (error, data) => {
+      if (error) return res.status(500).send(error);
+      return res.status(200).json(data);
+  });
+}
+
 /* exports.postVente = (req, res) => {
   const StatutLivre = "UPDATE commande SET statut = 1, id_livraison = 2 WHERE id_commande = ?";
   const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;

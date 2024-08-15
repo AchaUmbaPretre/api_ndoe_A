@@ -1435,7 +1435,7 @@ WHERE detail_commande.est_supprime = 0
 exports.getMouvementDepart = (req, res) => {
   const { start_date, end_date, marque_id } = req.query;
 
-  let q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, marque.nom AS nom_marque, taille.taille,client.nom AS nom_client, client.id AS id_client1,client.telephone, users.username AS livreur, SUM(mouvement_stock.quantite) AS total_varianteproduit, users.id AS id_livreur, commune.nom_commune, vente.prix_unitaire AS prix FROM mouvement_stock 
+  let q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, marque.nom AS nom_marque, taille.taille,client.nom AS nom_client, client.id AS id_client1,client.telephone, users.username AS livreur, SUM(mouvement_stock.quantite) AS total_varianteproduit, users.id AS id_livreur, commune.nom_commune, vente.prix_unitaire AS prix, taille.id_taille FROM mouvement_stock 
   INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
   INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
   INNER JOIN detail_commande ON mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit 
