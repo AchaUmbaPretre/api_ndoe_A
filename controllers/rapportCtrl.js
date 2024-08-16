@@ -665,8 +665,9 @@ exports.getRapportVenteSearch = (req, res) => {
   };
 
 exports.getRapportVenteCat = (req, res) => {
-    const { start_date, end_date, id_cat } = req.query;
-  
+    const { start_date, end_date, id_cat,  filter } = req.query;
+
+    
     let q = `
       SELECT 
         SUM(v.quantite) AS quantite_vendue,
@@ -690,11 +691,33 @@ exports.getRapportVenteCat = (req, res) => {
       INNER JOIN taille t ON vp.id_taille = t.id_taille
       INNER JOIN categorie categorie ON p.id_categorie = categorie.id_categorie
       WHERE v.est_supprime = 0
-        ${start_date ? `AND v.date_vente >= '${start_date}'` : ''}
-        ${end_date ? `AND v.date_vente <= '${end_date}'` : ''}
         ${id_cat ? `AND categorie.id_categorie = ${db.escape(id_cat)}` : ''}
-      GROUP BY categorie.id_categorie, categorie.nom_categorie
     `;
+
+    if (start_date) {
+      q += ` AND DATE(v.date_vente) >= '${start_date}'`;
+    }
+    if (end_date) {
+      q += ` AND DATE(v.date_vente) <= '${end_date}'`;
+    }
+    if (filter === 'today') {
+      q += ` AND DATE(v.date_vente) = CURDATE()`;
+
+    } else if (filter === 'yesterday') {
+      q += ` AND DATE(v.date_vente) = CURDATE() - INTERVAL 1 DAY`;
+    } else if (filter === 'last7days') {
+      q += ` AND DATE(v.date_vente) >= CURDATE() - INTERVAL 7 DAY`;
+    } else if (filter === 'last30days') {
+      q += ` AND DATE(v.date_vente) >= CURDATE() - INTERVAL 30 DAY`;
+    } else if (filter === 'last1year') {
+      q += ` AND DATE(v.date_vente) >= CURDATE() - INTERVAL 1 YEAR`;
+    } else if (filter === 'year' && year) {
+      q += ` AND YEAR(v.date_vente) = ${db.escape(year)}`;
+    }
+    
+    q += `
+        GROUP BY categorie.id_categorie, categorie.nom_categorie
+        `;
   
     try {
       db.query(q, (error, data) => {
