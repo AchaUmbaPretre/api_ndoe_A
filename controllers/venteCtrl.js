@@ -171,7 +171,7 @@ exports.getVenteOne = (req, res) => {
   const {id} = req.params;
   const { start_date, end_date } = req.query;
   const q = `
-  SELECT vente.*, users.username, varianteproduit.img, client.nom AS nom_client,client.telephone, marque.nom AS nom_marque, taille.taille AS pointure, produit.nom_produit, commande.id_shop
+  SELECT vente.*, users.username, varianteproduit.img,varianteproduit.id_varianteProduit, client.nom AS nom_client,client.telephone, marque.nom AS nom_marque, taille.taille AS pointure, produit.nom_produit, commande.id_shop
       FROM vente
   INNER JOIN users ON vente.id_livreur = users.id
   INNER JOIN detail_commande ON vente.id_detail_commande = detail_commande.id_detail
