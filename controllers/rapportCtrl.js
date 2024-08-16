@@ -667,7 +667,7 @@ exports.getRapportVenteSearch = (req, res) => {
 exports.getRapportVenteCat = (req, res) => {
     const { start_date, end_date, id_cat,  filter } = req.query;
 
-    
+
     let q = `
       SELECT 
         SUM(v.quantite) AS quantite_vendue,
@@ -731,7 +731,6 @@ exports.getRapportVenteCat = (req, res) => {
       return res.status(500).json({ error: error.message });
     }
   };
-  
 
 
 /* exports.getRapportVenteCouleur = (req, res) => {
