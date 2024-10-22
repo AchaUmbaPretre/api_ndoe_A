@@ -1557,8 +1557,9 @@ exports.getMouvementEchange = (req, res) => {
   });
 };
 
-exports.getMouvement = (req, res) => {
-  const { start_date, end_date} = req.query;
+/* exports.getMouvement = (req, res) => {
+  const { start_date, end_date } = req.query;
+
   const q = `SELECT
           mouvement_stock.*,
           varianteproduit.stock,
@@ -1650,7 +1651,159 @@ exports.getMouvement = (req, res) => {
 
     return res.status(200).json(data);
   });
+}; */
+
+
+exports.getMouvement = (req, res) => {
+  const { start_date, end_date, page = 1, pageSize = 10 } = req.query;
+  const offset = (page - 1) * pageSize;
+
+  // Requête pour obtenir le total d'éléments
+  const totalQuery = `
+  SELECT COUNT(DISTINCT mouvement_stock.id_commande) as total 
+  FROM mouvement_stock 
+  INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+  WHERE detail_commande.est_supprime = 0
+  ${start_date ? `AND DATE(mouvement_stock.date_mouvement) >= ?` : ''}
+  ${end_date ? `AND DATE(mouvement_stock.date_mouvement) <= ?` : ''}`;
+
+  const totalQueryParams = [];
+  if (start_date) totalQueryParams.push(start_date);
+  if (end_date) totalQueryParams.push(end_date);
+
+  // Exécution de la requête pour obtenir le total
+  db.query(totalQuery, totalQueryParams, (totalError, totalData) => {
+    if (totalError) {
+      console.error("Database error: ", totalError);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    const totalItems = totalData[0].total; // Nombre total d'éléments
+
+    // Requête pour obtenir les données paginées
+    const q = `
+      SELECT
+        mouvement_stock.*,
+        varianteproduit.stock,
+        varianteproduit.img,
+        type_mouvement.type_mouvement,
+        marque.nom AS nom_marque,
+        taille.taille,
+        client.nom AS nom_client,
+        client.id AS id_client1,
+        client.telephone,
+        commande.id_shop,
+        users.username AS livreur,
+        users.id AS id_livreur,
+        commune.nom_commune,
+        (
+          SELECT SUM(mouvement_stock.quantite)
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement IN (12, 4, 7)
+          LIMIT 1
+        ) AS total_varianteproduit,
+        (
+          SELECT SUM(mouvement_stock.quantite)
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement = 4
+          LIMIT 1
+        ) AS total_vendu,
+        (
+          SELECT SUM(mouvement_stock.quantite)
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement = 5
+          LIMIT 1
+        ) AS total_retours,
+        (
+          SELECT SUM(mouvement_stock.quantite)
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement = 7
+          LIMIT 1
+        ) AS total_echange,
+        (
+          SELECT mouvement_stock.id_type_mouvement
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement = 5
+          LIMIT 1
+        ) AS id_retours,
+        (
+          SELECT mouvement_stock.id_type_mouvement
+          FROM mouvement_stock
+          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+            AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+          WHERE detail_commande.est_supprime = 0 
+            AND commande.id_commande = detail_commande.id_commande 
+            AND type_mouvement.id_type_mouvement = 4
+          LIMIT 1
+        ) AS id_vente
+      FROM
+        mouvement_stock
+      INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit
+      INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
+      INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande 
+        AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
+      INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+      INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+      INNER JOIN marque ON produit.id_marque = marque.id_marque
+      INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
+      INNER JOIN client ON commande.id_client = client.id
+      INNER JOIN detail_livraison ON detail_commande.id_detail = detail_livraison.id_detail_commande
+      INNER JOIN users ON detail_livraison.id_livreur = users.id
+      LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
+      LEFT JOIN commune ON adresse.id_commune = commune.id_commune
+      WHERE detail_commande.est_supprime = 0
+      ${start_date ? `AND DATE(mouvement_stock.date_mouvement) >= ?` : ''}
+      ${end_date ? `AND DATE(mouvement_stock.date_mouvement) <= ?` : ''}
+      GROUP BY commande.id_commande
+      ORDER BY mouvement_stock.date_mouvement DESC
+      LIMIT ? OFFSET ?`;
+
+    const queryParams = [];
+    if (start_date) queryParams.push(start_date);
+    if (end_date) queryParams.push(end_date);
+    queryParams.push(Number(pageSize), Number(offset));
+
+    // Exécution de la requête pour obtenir les données
+    db.query(q, queryParams, (error, data) => {
+      if (error) {
+        console.error("Database error: ", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+      }
+
+      // Retournez les données et le total
+      return res.status(200).json({ items: data, total: totalItems });
+    });
+  });
 };
+
+
+
 
 exports.getMouvementEncoursRapports = (req, res) => {
   const filter = req.query.filter;
