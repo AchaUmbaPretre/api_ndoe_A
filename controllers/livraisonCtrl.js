@@ -531,7 +531,7 @@ db.query(checkDuplicateQuery, [req.body.id_varianteProduit, req.body.id_commande
   });
 } */;
 
-exports.postLivraisonDetail = (req, res) => {
+/* exports.postLivraisonDetail = (req, res) => {
   const getIdCommandeQuery = 'SELECT prix, quantite FROM detail_commande WHERE id_varianteProduit = ?';
   const qStockeTaille = 'SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?';
   const qUpdateStock = 'UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?';
@@ -657,6 +657,187 @@ exports.postLivraisonDetail = (req, res) => {
               } else {
                 return res.status(404).json('Prix ou quantité non trouvés pour l\'id_varianteProduit spécifié');
               }
+            });
+          });
+        });
+      });
+    });
+  });
+}; */
+
+exports.postLivraisonDetail = (req, res) => {
+  const getIdCommandeQuery = 'SELECT prix, quantite FROM detail_commande WHERE id_varianteProduit = ?';
+  const qStockeTaille = 'SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?';
+  const qUpdateStock = 'UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?';
+  const qInsertMouvement = 'INSERT INTO mouvement_stock(id_varianteProduit, id_type_mouvement, quantite, id_user_cr, id_client, id_commande, id_fournisseur, description) VALUES(?,?,?,?,?,?,?,?)';
+
+  const valuesMouv = [
+    req.body.id_varianteProduit,
+    req.body.id_type_mouvement,
+    req.body.quantite,
+    req.body.id_user_cr,
+    req.body.id_client,
+    req.body.id_commande,
+    req.body.id_fournisseur,
+    req.body.description
+  ];
+
+  const idVarianteProduit = req.body.id_varianteProduit;
+  const quantiteLivre = req.body.qte_livre;
+
+  const checkDuplicateQuery = `
+    SELECT COUNT(*) as countLivraison
+    FROM detail_livraison
+    WHERE id_varianteProduit = ? AND id_commande = ?
+  `;
+
+  db.beginTransaction((err) => {
+    if (err) {
+      console.error('Error starting transaction:', err);
+      return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+    }
+
+    // Check for duplicate livraison
+    db.query(checkDuplicateQuery, [idVarianteProduit, req.body.id_commande], (error, rows) => {
+      if (error) {
+        return db.rollback(() => {
+          console.error('Error checking duplicate livraison:', error);
+          return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+        });
+      }
+
+      if (rows[0].countLivraison > 0) {
+        return db.rollback(() => {
+          res.json('Une livraison pour cette variante de produit et cette commande existe déjà.');
+        });
+      }
+
+      // Check for duplicate mouvement
+      const checkDuplicateMouvementQuery = `
+        SELECT COUNT(*) as countMouvement
+        FROM mouvement_stock
+        WHERE id_varianteProduit = ? AND id_commande = ?
+      `;
+
+      db.query(checkDuplicateMouvementQuery, [idVarianteProduit, req.body.id_commande], (error, mouvementRows) => {
+        if (error) {
+          return db.rollback(() => {
+            console.error('Error checking duplicate mouvement:', error);
+            return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+          });
+        }
+
+        if (mouvementRows[0].countMouvement > 0) {
+          return db.rollback(() => {
+            res.json('Un mouvement pour cette variante de produit et cette commande existe déjà.');
+          });
+        }
+
+        // Get current stock
+        db.query(qStockeTaille, [idVarianteProduit], (error, stockTailleData) => {
+          if (error) {
+            return db.rollback(() => {
+              console.error('Error fetching stock taille:', error);
+              return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+            });
+          }
+
+          const stockTailleActuel = stockTailleData[0].stock;
+          let newStockTaille;
+
+          switch (parseInt(req.body.id_type_mouvement)) {
+            case 13: // Cas spécifique (par exemple, livraison sans mise à jour de stock)
+              newStockTaille = stockTailleActuel;
+              break;
+            case 12: // Cas de sortie de stock
+              newStockTaille = stockTailleActuel - parseInt(req.body.quantite);
+              if (newStockTaille < 0) {
+                return db.rollback(() => {
+                  return res.status(400).json({ error: 'Quantité de stock insuffisante.' });
+                });
+              }
+              break;
+            default:
+              newStockTaille = stockTailleActuel;
+          }
+
+          // Update stock
+          db.query(qUpdateStock, [newStockTaille, idVarianteProduit], (error) => {
+            if (error) {
+              return db.rollback(() => {
+                console.error('Error updating stock:', error);
+                return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+              });
+            }
+
+            // Insert mouvement stock
+            db.query(qInsertMouvement, valuesMouv, (error) => {
+              if (error) {
+                return db.rollback(() => {
+                  console.error('Error inserting mouvement:', error);
+                  return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                });
+              }
+
+              // Get command details for livraison insertion
+              db.query(getIdCommandeQuery, [idVarianteProduit], (error, results) => {
+                if (error) {
+                  return db.rollback(() => {
+                    console.error('Error fetching commande details:', error);
+                    return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                  });
+                }
+
+                if (results.length > 0) {
+                  const prixUnitaire = results[0].prix;
+                  const quantiteCommande = results[0].quantite;
+                  const prixTotal = (prixUnitaire / quantiteCommande) * quantiteLivre;
+
+                  const insertQuery = `
+                    INSERT INTO detail_livraison (id_commande, quantite_prix, id_varianteProduit, qte_livre, qte_commande, prix, package, id_package, id_livreur, id_detail_commande, user_cr)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                  `;
+                  const values = [
+                    req.body.id_commande,
+                    req.body.quantite_prix,
+                    idVarianteProduit,
+                    quantiteLivre,
+                    req.body.qte_commande,
+                    prixTotal,
+                    req.body.package,
+                    req.body.id_package,
+                    req.body.id_livreur,
+                    req.body.id_detail_commande,
+                    req.body.user_cr
+                  ];
+
+                  // Insert into detail_livraison
+                  db.query(insertQuery, values, (insertError) => {
+                    if (insertError) {
+                      return db.rollback(() => {
+                        console.error('Error inserting livraison detail:', insertError);
+                        return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                      });
+                    }
+
+                    // Commit transaction if everything is successful
+                    db.commit((commitErr) => {
+                      if (commitErr) {
+                        return db.rollback(() => {
+                          console.error('Error committing transaction:', commitErr);
+                          return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
+                        });
+                      }
+
+                      return res.json('Processus réussi');
+                    });
+                  });
+                } else {
+                  return db.rollback(() => {
+                    return res.status(404).json('Prix ou quantité non trouvés pour l\'id_varianteProduit spécifié');
+                  });
+                }
+              });
             });
           });
         });
