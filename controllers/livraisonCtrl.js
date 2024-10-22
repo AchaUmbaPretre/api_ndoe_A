@@ -279,58 +279,6 @@ exports.getLivraisonDetailOne = (req, res)=>{
   const getIdCommandeQuery = 'SELECT prix, quantite FROM detail_commande WHERE id_varianteProduit = ?';
   const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
   const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
-  const qInsertMouvement = 'INSERT INTO mouvement_stock(`id_varianteProduit`, `id_type_mouvement`, `quantite`, `id_user_cr`, `id_client`, `id_fournisseur`, `description`) VALUES(?,?,?,?,?,?,?)';
-
-
-  const idVarianteProduit = req.body.id_varianteProduit;
-  const quantiteLivre = req.body.qte_livre;
-
-  db.query(getIdCommandeQuery, [idVarianteProduit], (error, results) => {
-    if (error) {
-      res.status(500).json(error);
-      console.log(error);
-    } else {
-      if (results.length > 0) {
-        const prixUnitaire = results[0].prix;
-        const quantiteCommande = results[0].quantite;
-        const prixTotal = (prixUnitaire / quantiteCommande) * quantiteLivre;
-
-        const insertQuery = 'INSERT INTO detail_livraison (id_commande, quantite_prix, id_varianteProduit, qte_livre, qte_commande, prix, package, id_package,	id_livreur, id_detail_commande, user_cr) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
-
-        const values = [
-          req.body.id_commande,
-          req.body.quantite_prix,
-          idVarianteProduit,
-          quantiteLivre,
-          req.body.qte_commande,
-          prixTotal,
-          req.body.package,
-          req.body.id_package,
-          req.body.id_livreur,
-          req.body.id_detail_commande,
-          req.body.user_cr
-        ];
-
-        db.query(insertQuery, values, (insertError, insertData) => {
-          if (insertError) {
-            res.status(500).json(insertError);
-            console.log(insertError);
-          } else {
-            res.json('Processus réussi');
-          }
-        });
-      } else {
-        res.status(404).json('Prix ou quantité non trouvés pour l\'id_varianteProduit spécifié');
-      }
-    }
-  });
-}; */
-
-
-/* exports.postLivraisonDetail = (req, res) => {
-  const getIdCommandeQuery = 'SELECT prix, quantite FROM detail_commande WHERE id_varianteProduit = ?';
-  const qStockeTaille = `SELECT stock FROM varianteproduit WHERE id_varianteProduit = ?`;
-  const qUpdateStock = `UPDATE varianteproduit SET stock = ? WHERE id_varianteProduit = ?`;
   const qInsertMouvement = 'INSERT INTO mouvement_stock(`id_varianteProduit`, `id_type_mouvement`, `quantite`, `id_user_cr`, `id_client`, `id_commande`,`id_fournisseur`, `description`) VALUES(?,?,?,?,?,?,?,?)';
 
   const valuesMouv = [
@@ -448,7 +396,7 @@ db.query(checkDuplicateQuery, [req.body.id_varianteProduit, req.body.id_commande
     })
   }
 })
-}; */
+};*/
 
 
 /* exports.postLivraisonDetail = (req, res) => {
@@ -716,7 +664,6 @@ exports.postLivraisonDetail = (req, res) => {
     });
   });
 };
-
 
 
 exports.deleteLivraisonDetail = (req, res) => {
