@@ -35,6 +35,4 @@ router.get('/detail-commandeCount', getDemandeCommandeCount)
 router.post('/detail-commande', postDemandeCommande)
 router.delete('/detail-commande/:id', deleteDemandeCommande)
 
-
-
 module.exports = router;
