@@ -691,53 +691,44 @@ exports.postLivraisonDetail = (req, res) => {
     WHERE id_varianteProduit = ? AND id_commande = ?
   `;
 
-  db.beginTransaction((err) => {
+  // Obtenir une connexion à partir du pool
+  db.getConnection((err, connection) => {
     if (err) {
-      console.error('Error starting transaction:', err);
+      console.error('Erreur de connexion à la base de données:', err);
       return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
     }
 
-    // Check for duplicate livraison
-    db.query(checkDuplicateQuery, [idVarianteProduit, req.body.id_commande], (error, rows) => {
-      if (error) {
-        return db.rollback(() => {
-          console.error('Error checking duplicate livraison:', error);
-          return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
-        });
+    // Commencer une transaction
+    connection.beginTransaction((err) => {
+      if (err) {
+        console.error('Erreur lors du démarrage de la transaction:', err);
+        connection.release(); // Libérer la connexion
+        return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
       }
 
-      if (rows[0].countLivraison > 0) {
-        return db.rollback(() => {
-          res.json('Une livraison pour cette variante de produit et cette commande existe déjà.');
-        });
-      }
-
-      // Check for duplicate mouvement
-      const checkDuplicateMouvementQuery = `
-        SELECT COUNT(*) as countMouvement
-        FROM mouvement_stock
-        WHERE id_varianteProduit = ? AND id_commande = ?
-      `;
-
-      db.query(checkDuplicateMouvementQuery, [idVarianteProduit, req.body.id_commande], (error, mouvementRows) => {
+      // Vérification des duplicatas dans detail_livraison
+      connection.query(checkDuplicateQuery, [idVarianteProduit, req.body.id_commande], (error, rows) => {
         if (error) {
-          return db.rollback(() => {
-            console.error('Error checking duplicate mouvement:', error);
+          return connection.rollback(() => {
+            console.error('Erreur lors de la vérification des duplicatas de livraison:', error);
+            connection.release();
             return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
           });
         }
 
-        if (mouvementRows[0].countMouvement > 0) {
-          return db.rollback(() => {
-            res.json('Un mouvement pour cette variante de produit et cette commande existe déjà.');
+        if (rows[0].countLivraison > 0) {
+          return connection.rollback(() => {
+            connection.release();
+            return res.json('Une livraison pour cette variante de produit et cette commande existe déjà.');
           });
         }
 
-        // Get current stock
-        db.query(qStockeTaille, [idVarianteProduit], (error, stockTailleData) => {
+        // Continuer avec les vérifications, mise à jour du stock et insertion
+        connection.query(qStockeTaille, [idVarianteProduit], (error, stockTailleData) => {
           if (error) {
-            return db.rollback(() => {
-              console.error('Error fetching stock taille:', error);
+            return connection.rollback(() => {
+              console.error('Erreur lors de la récupération du stock:', error);
+              connection.release();
               return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
             });
           }
@@ -746,13 +737,14 @@ exports.postLivraisonDetail = (req, res) => {
           let newStockTaille;
 
           switch (parseInt(req.body.id_type_mouvement)) {
-            case 13: // Cas spécifique (par exemple, livraison sans mise à jour de stock)
+            case 13:
               newStockTaille = stockTailleActuel;
               break;
-            case 12: // Cas de sortie de stock
+            case 12:
               newStockTaille = stockTailleActuel - parseInt(req.body.quantite);
               if (newStockTaille < 0) {
-                return db.rollback(() => {
+                return connection.rollback(() => {
+                  connection.release();
                   return res.status(400).json({ error: 'Quantité de stock insuffisante.' });
                 });
               }
@@ -761,29 +753,32 @@ exports.postLivraisonDetail = (req, res) => {
               newStockTaille = stockTailleActuel;
           }
 
-          // Update stock
-          db.query(qUpdateStock, [newStockTaille, idVarianteProduit], (error) => {
+          // Mise à jour du stock
+          connection.query(qUpdateStock, [newStockTaille, idVarianteProduit], (error) => {
             if (error) {
-              return db.rollback(() => {
-                console.error('Error updating stock:', error);
+              return connection.rollback(() => {
+                console.error('Erreur lors de la mise à jour du stock:', error);
+                connection.release();
                 return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
               });
             }
 
-            // Insert mouvement stock
-            db.query(qInsertMouvement, valuesMouv, (error) => {
+            // Insertion dans mouvement_stock
+            connection.query(qInsertMouvement, valuesMouv, (error) => {
               if (error) {
-                return db.rollback(() => {
-                  console.error('Error inserting mouvement:', error);
+                return connection.rollback(() => {
+                  console.error('Erreur lors de l\'insertion dans mouvement_stock:', error);
+                  connection.release();
                   return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
                 });
               }
 
-              // Get command details for livraison insertion
-              db.query(getIdCommandeQuery, [idVarianteProduit], (error, results) => {
+              // Récupération des détails de la commande
+              connection.query(getIdCommandeQuery, [idVarianteProduit], (error, results) => {
                 if (error) {
-                  return db.rollback(() => {
-                    console.error('Error fetching commande details:', error);
+                  return connection.rollback(() => {
+                    console.error('Erreur lors de la récupération des détails de la commande:', error);
+                    connection.release();
                     return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
                   });
                 }
@@ -792,7 +787,6 @@ exports.postLivraisonDetail = (req, res) => {
                   const prixUnitaire = results[0].prix;
                   const quantiteCommande = results[0].quantite;
                   const prixTotal = (prixUnitaire / quantiteCommande) * quantiteLivre;
-
                   const insertQuery = `
                     INSERT INTO detail_livraison (id_commande, quantite_prix, id_varianteProduit, qte_livre, qte_commande, prix, package, id_package, id_livreur, id_detail_commande, user_cr)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?)
@@ -811,29 +805,33 @@ exports.postLivraisonDetail = (req, res) => {
                     req.body.user_cr
                   ];
 
-                  // Insert into detail_livraison
-                  db.query(insertQuery, values, (insertError) => {
+                  // Insertion dans detail_livraison
+                  connection.query(insertQuery, values, (insertError) => {
                     if (insertError) {
-                      return db.rollback(() => {
-                        console.error('Error inserting livraison detail:', insertError);
+                      return connection.rollback(() => {
+                        console.error('Erreur lors de l\'insertion dans detail_livraison:', insertError);
+                        connection.release();
                         return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
                       });
                     }
 
-                    // Commit transaction if everything is successful
-                    db.commit((commitErr) => {
-                      if (commitErr) {
-                        return db.rollback(() => {
-                          console.error('Error committing transaction:', commitErr);
+                    // Valider la transaction
+                    connection.commit((commitError) => {
+                      if (commitError) {
+                        return connection.rollback(() => {
+                          console.error('Erreur lors de la validation de la transaction:', commitError);
+                          connection.release();
                           return res.status(500).json({ error: 'Erreur réseau, veuillez réessayer plus tard.' });
                         });
                       }
 
+                      connection.release(); // Libérer la connexion après succès
                       return res.json('Processus réussi');
                     });
                   });
                 } else {
-                  return db.rollback(() => {
+                  return connection.rollback(() => {
+                    connection.release();
                     return res.status(404).json('Prix ou quantité non trouvés pour l\'id_varianteProduit spécifié');
                   });
                 }
@@ -845,7 +843,6 @@ exports.postLivraisonDetail = (req, res) => {
     });
   });
 };
-
 
 exports.deleteLivraisonDetail = (req, res) => {
     const {id} = req.params;
