@@ -274,7 +274,7 @@ exports.deleteDemandeCommande = (req, res) => {
   };
 
 //Commande
-exports.getCommande = (req, res) => {
+/* exports.getCommande = (req, res) => {
   const start_date = req.query.date_start;
   const end_date = req.query.date_end;
 
@@ -317,6 +317,83 @@ exports.getCommande = (req, res) => {
       return res.status(500).send(error);
     }
     return res.status(200).json(data);
+  });
+}; */
+
+exports.getCommande = (req, res) => {
+  const { start_date, end_date, page = 1, pageSize = 10 } = req.query;
+
+  // Requête de base pour récupérer les commandes paginées
+  let q = `
+    SELECT commande.*, client.nom, statut.nom_statut, IFNULL(nbre_ventes.nbre_vente, 0) AS nbre_vente
+    FROM commande
+    INNER JOIN client ON commande.id_client = client.id
+    INNER JOIN statut ON commande.statut = statut.id_statut
+    LEFT JOIN (
+        SELECT 
+            id_commande,
+            COUNT(id_commande) AS nbre_vente
+        FROM vente
+        GROUP BY id_commande
+    ) AS nbre_ventes ON commande.id_commande = nbre_ventes.id_commande
+    WHERE commande.est_supprime = 0
+  `;
+
+  let countQuery = `
+    SELECT COUNT(*) AS totalItems
+    FROM commande
+    INNER JOIN client ON commande.id_client = client.id
+    INNER JOIN statut ON commande.statut = statut.id_statut
+    WHERE commande.est_supprime = 0
+  `;
+
+  const params = [];
+  const countParams = [];
+
+  // Gestion des filtres de date pour les deux requêtes
+  if (start_date && start_date !== 'null') {
+    q += ` AND DATE(commande.date_commande) >= ?`;
+    countQuery += ` AND DATE(commande.date_commande) >= ?`;
+    params.push(start_date);
+    countParams.push(start_date);
+  }
+
+  if (end_date && end_date !== 'null' && end_date !== 'undefined') {
+    q += ` AND DATE(commande.date_commande) <= ?`;
+    countQuery += ` AND DATE(commande.date_commande) <= ?`;
+    params.push(end_date);
+    countParams.push(end_date);
+  }
+
+  // Pagination
+  const offset = (page - 1) * pageSize;
+  q += ` ORDER BY commande.date_commande DESC LIMIT ? OFFSET ?`;
+  params.push(parseInt(pageSize), parseInt(offset));
+
+  // Exécutez d'abord la requête de comptage pour obtenir le total d'éléments
+  db.query(countQuery, countParams, (countError, countResult) => {
+    if (countError) {
+      console.error('Erreur lors de la récupération du nombre total d\'éléments :', countError);
+      return res.status(500).send({ message: 'Erreur interne du serveur', error: countError });
+    }
+
+    const totalItems = countResult[0].totalItems;
+
+    // Ensuite, exécutez la requête principale pour récupérer les données paginées
+    db.query(q, params, (error, data) => {
+      if (error) {
+        console.error('Erreur lors de la récupération des commandes :', error);
+        return res.status(500).send({ message: 'Erreur interne du serveur', error });
+      }
+
+      // Retourner les données avec le total des éléments
+      return res.status(200).json({
+        totalItems,
+        currentPage: parseInt(page),
+        pageSize: parseInt(pageSize),
+        data
+      });
+    });
   });
 };
 
