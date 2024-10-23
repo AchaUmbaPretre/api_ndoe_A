@@ -13,8 +13,8 @@ exports.getProduitCount = (req, res) => {
 })
 }
 
-exports.getProduit = (req, res) => {
-  const {id_marque, categorie} = req.query;
+/* exports.getProduit = (req, res) => {
+  const {id_marque, categorie, page = 1, pageSize = 15} = req.query;
 
     const q = `SELECT produit.*,categorie.nom_categorie, marque.nom AS nom_marque, matiere.nom_matiere, famille.nom AS nom_famille, vp.img FROM produit
                 INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
@@ -33,7 +33,90 @@ exports.getProduit = (req, res) => {
         if (error) res.status(500).send(error);
         return res.status(200).json(data);
     });
+}; */
+
+exports.getProduit = (req, res) => {
+  const { id_marque, categorie, page = 1, pageSize = 15 } = req.query;
+
+  // Calcul pour la pagination
+  const offset = (page - 1) * pageSize;
+
+  // Requête pour le total
+  let countQuery = `
+    SELECT COUNT(*) AS total
+    FROM produit
+    INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
+    INNER JOIN famille ON categorie.id_famille = famille.id_famille
+    WHERE produit.est_supprime = 0
+  `;
+
+  const countParams = [];
+
+  if (id_marque) {
+    countQuery += ` AND marque.id_marque = ?`;
+    countParams.push(id_marque);
+  }
+
+  if (categorie) {
+    countQuery += ` AND categorie.id_categorie = ?`;
+    countParams.push(categorie);
+  }
+
+  // Requête pour récupérer les produits
+  let q = `
+    SELECT produit.*, categorie.nom_categorie, marque.nom AS nom_marque, 
+           matiere.nom_matiere, famille.nom AS nom_famille, vp.img 
+    FROM produit
+    INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
+    INNER JOIN famille ON categorie.id_famille = famille.id_famille
+    LEFT JOIN varianteproduit vp ON produit.id_produit = vp.id_produit
+    WHERE produit.est_supprime = 0
+  `;
+
+  const params = [];
+
+  if (id_marque) {
+    q += ` AND marque.id_marque = ?`;
+    params.push(id_marque);
+  }
+
+  if (categorie) {
+    q += ` AND categorie.id_categorie = ?`;
+    params.push(categorie);
+  }
+
+  q += `
+    GROUP BY produit.code_variante
+    ORDER BY produit.date_entrant
+    LIMIT ? OFFSET ?
+  `;
+
+  params.push(parseInt(pageSize), parseInt(offset));
+
+  db.query(countQuery, countParams, (error, countResult) => {
+    if (error) {
+      console.error("Database count query error: ", error);
+      return res.status(500).json({ message: "Erreur serveur", error });
+    }
+
+    const totalItems = countResult[0].total;
+
+    db.query(q, params, (error, data) => {
+      if (error) {
+        console.error("Database query error: ", error);
+        return res.status(500).json({ message: "Erreur serveur", error });
+      }
+
+      return res.status(200).json({ data, total: totalItems });
+    });
+  });
 };
+
+
 
 exports.getProduitOne = (req,res) => {
 
