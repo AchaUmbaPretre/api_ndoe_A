@@ -323,8 +323,6 @@ exports.deleteDemandeCommande = (req, res) => {
 exports.getCommande = (req, res) => {
   const { start_date, end_date, page = 1, pageSize = 10 } = req.query;
 
-  console.log(page, pageSize)
-
   // Requête de base pour récupérer les commandes paginées
   let q = `
     SELECT commande.*, client.nom, statut.nom_statut, IFNULL(nbre_ventes.nbre_vente, 0) AS nbre_vente
