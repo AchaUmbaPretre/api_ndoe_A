@@ -123,8 +123,8 @@ exports.deleteLivraison = (req, res) => {
 }
 
 //Detail livraison
-exports.getLivraisonDetail = (req, res) => {
-  const { start_date, end_date } = req.query;
+/* exports.getLivraisonDetail = (req, res) => {
+  const { start_date, end_date, } = req.query;
 
   let q = `
     SELECT 
@@ -172,6 +172,102 @@ exports.getLivraisonDetail = (req, res) => {
       return res.status(500).json({ error: 'Erreur du serveur lors de la récupération des données.', details: error });
     }
     return res.status(200).json(data);
+  });
+};
+ */
+
+exports.getLivraisonDetail = (req, res) => {
+  const { start_date, end_date, page = 1, pageSize = 15 } = req.query;
+  const offset = (page - 1) * pageSize;
+
+  const totalQuery = `
+    SELECT 
+      COUNT(DISTINCT detail_livraison.id_detail_livraison) AS total
+    FROM detail_livraison
+    INNER JOIN varianteproduit ON detail_livraison.id_varianteProduit = varianteproduit.id_varianteProduit
+    INNER JOIN commande ON detail_livraison.id_commande = commande.id_commande
+    INNER JOIN client ON commande.id_client = client.id
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN users ON detail_livraison.id_livreur = users.id
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
+    LEFT JOIN commune ON adresse.id_commune = commune.id_commune
+    WHERE produit.est_supprime = 0
+  `;
+
+  let q = `
+    SELECT 
+      SUM(detail_livraison.qte_commande) AS quant,
+      detail_livraison.*,
+      varianteproduit.img,
+      client.nom AS nom_client,
+      client.id AS id_client,
+      client.telephone,
+      marque.nom AS nom_marque,
+      users.username AS nom_livreur,
+      taille.taille AS pointure,
+      SUM(detail_livraison.qte_livre) AS total_produit,
+      commande.id_shop,
+      commune.nom_commune
+    FROM detail_livraison
+    INNER JOIN varianteproduit ON detail_livraison.id_varianteProduit = varianteproduit.id_varianteProduit
+    INNER JOIN commande ON detail_livraison.id_commande = commande.id_commande
+    INNER JOIN client ON commande.id_client = client.id
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN users ON detail_livraison.id_livreur = users.id
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
+    LEFT JOIN commune ON adresse.id_commune = commune.id_commune
+    WHERE produit.est_supprime = 0
+  `;
+
+  const params = [];
+  const totalParams = [];
+
+  if (start_date && start_date !== 'null') {
+    q += ` AND DATE(detail_livraison.date_creation) >= ?`;
+    totalQuery += ` AND DATE(detail_livraison.date_creation) >= ?`;
+    params.push(start_date);
+    totalParams.push(start_date);
+  }
+
+  if (end_date && end_date !== 'null') {
+    q += ` AND DATE(detail_livraison.date_creation) <= ?`;
+    totalQuery += ` AND DATE(detail_livraison.date_creation) <= ?`;
+    params.push(end_date);
+    totalParams.push(end_date);
+  }
+
+  q += `
+    GROUP BY commande.id_commande
+    ORDER BY detail_livraison.date_creation DESC
+    LIMIT ? OFFSET ?
+  `;
+  params.push(parseInt(pageSize), parseInt(offset));
+
+  db.query(totalQuery, totalParams, (error, totalResult) => {
+    if (error) {
+      console.error('Erreur SQL (Total) :', error);
+      return res.status(500).json({ error: 'Erreur du serveur lors de la récupération du total des éléments.', details: error });
+    }
+
+    const totalItems = totalResult[0]?.total || 0;
+
+    db.query(q, params, (error, data) => {
+      if (error) {
+        console.error('Erreur SQL (Données) :', error);
+        return res.status(500).json({ error: 'Erreur du serveur lors de la récupération des données.', details: error });
+      }
+
+      return res.status(200).json({
+        data,
+        total: totalItems,
+        currentPage: parseInt(page),
+        pageSize: parseInt(pageSize),
+      });
+    });
   });
 };
 

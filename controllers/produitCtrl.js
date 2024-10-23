@@ -1738,7 +1738,7 @@ exports.getMouvementEchange = (req, res) => {
 
 
 exports.getMouvement = (req, res) => {
-  const { start_date, end_date, page = 1, pageSize = 10 } = req.query;
+  const { start_date, end_date, page = 1, pageSize = 15 } = req.query;
   const offset = (page - 1) * pageSize;
 
   // Requête pour obtenir le total d'éléments
