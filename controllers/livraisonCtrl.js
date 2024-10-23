@@ -180,6 +180,8 @@ exports.getLivraisonDetail = (req, res) => {
   const { start_date, end_date, page = 1, pageSize = 15 } = req.query;
   const offset = (page - 1) * pageSize;
 
+  console.log(page, pageSize)
+
   const totalQuery = `
     SELECT 
       COUNT(DISTINCT detail_livraison.id_detail_livraison) AS total
