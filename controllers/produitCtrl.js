@@ -1802,9 +1802,6 @@ exports.getMouvement = (req, res) => {
   });
 };
 
-
-
-
 exports.getMouvementEncoursRapports = (req, res) => {
   const filter = req.query.filter;
 
