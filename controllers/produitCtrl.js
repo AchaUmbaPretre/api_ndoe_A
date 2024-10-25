@@ -1564,44 +1564,88 @@ exports.getMouvementDepart = (req, res) => {
 };
 
 exports.getMouvementRetourner = (req, res) => {
+  const { page = 1, pageSize = 15 } = req.query;
+  const offset = (page - 1) * pageSize;
 
-  const q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, marque.nom AS nom_marque, taille.taille,client.nom AS nom_client, client.id AS id_client1,client.telephone, users.username AS livreur, SUM(mouvement_stock.quantite) AS total_varianteproduit, users.id AS id_livreur, commune.nom_commune FROM mouvement_stock 
-  INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
-  INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
-  INNER JOIN detail_commande ON mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit 
-  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
-  INNER JOIN marque ON produit.id_marque = marque.id_marque
-  INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
-  INNER JOIN detail_livraison ON commande.id_commande = detail_livraison.id_commande
-  INNER JOIN users ON detail_livraison.id_livreur = users.id
-  LEFT JOIN client ON commande.id_client = client.id
-  INNER JOIN adresse ON commande.id_adresse = adresse.id_adresse
-  INNER JOIN commune ON adresse.id_commune = commune.id_commune
+  const totalQuery = `
+    SELECT COUNT(DISTINCT mouvement_stock.id_commande) as total 
+    FROM mouvement_stock 
+    INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
+    INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
+    INNER JOIN detail_commande ON mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit 
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
+    INNER JOIN detail_livraison ON commande.id_commande = detail_livraison.id_commande
+    INNER JOIN users ON detail_livraison.id_livreur = users.id
+    LEFT JOIN client ON commande.id_client = client.id
+    INNER JOIN adresse ON commande.id_adresse = adresse.id_adresse
+    INNER JOIN commune ON adresse.id_commune = commune.id_commune
+    WHERE detail_commande.est_supprime = 0 AND mouvement_stock.id_type_mouvement = 5
+  `;
+
+  const mouvementQuery = `
+    SELECT mouvement_stock.*, 
+           varianteproduit.stock, 
+           varianteproduit.img, 
+           type_mouvement.type_mouvement, 
+           marque.nom AS nom_marque, 
+           taille.taille,
+           client.nom AS nom_client, 
+           client.id AS id_client1,
+           client.telephone, 
+           users.username AS livreur, 
+           SUM(mouvement_stock.quantite) AS total_varianteproduit, 
+           users.id AS id_livreur, 
+           commune.nom_commune 
+    FROM mouvement_stock 
+    INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
+    INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
+    INNER JOIN detail_commande ON mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit 
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
+    INNER JOIN detail_livraison ON commande.id_commande = detail_livraison.id_commande
+    INNER JOIN users ON detail_livraison.id_livreur = users.id
+    LEFT JOIN client ON commande.id_client = client.id
+    INNER JOIN adresse ON commande.id_adresse = adresse.id_adresse
+    INNER JOIN commune ON adresse.id_commune = commune.id_commune
     WHERE detail_commande.est_supprime = 0 AND mouvement_stock.id_type_mouvement = 5
     GROUP BY mouvement_stock.id_mouvement
     ORDER BY mouvement_stock.date_mouvement DESC
-            `;
+    LIMIT ? OFFSET ?
+  `;
 
-  db.query(q, (error, data) => {
+  db.query(totalQuery, (error, totalResult) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    const mouvementData = data.map(mouvement => {
-      let signe = "";
-      if (mouvement.id_type_mouvement === 1) {
-        signe = "+";
-      } else if (mouvement.id_type_mouvement === 2) {
-        signe = "-";
-      }
-      mouvement.quantite = `${signe}${mouvement.quantite}`;
-      return mouvement;
-    });
+    const total = totalResult[0].total;
 
-    return res.status(200).json(mouvementData);
+    db.query(mouvementQuery, [pageSize, offset], (error, mouvementData) => {
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      const formattedMouvements = mouvementData.map(mouvement => {
+        let signe = mouvement.id_type_mouvement === 1 ? '+' : '-';
+        mouvement.quantite = `${signe}${mouvement.quantite}`;
+        return mouvement;
+      });
+
+      return res.status(200).json({
+        total,
+        page,
+        pageSize,
+        data: formattedMouvements
+      });
+    });
   });
 };
+
 
 exports.getMouvementEchange = (req, res) => {
   const { start_date, end_date, marque_id } = req.query;
