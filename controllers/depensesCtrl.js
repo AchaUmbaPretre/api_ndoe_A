@@ -78,6 +78,7 @@ exports.deleteCatDepense = (req, res) => {
 exports.getDepense = (req, res) => {
   const { page = 1, pageSize = 15 } = req.query;
   const offset = (page - 1) * pageSize;
+  console.log(page, pageSize)
 
   const totalQuery = `
     SELECT COUNT(DISTINCT DATE(depenses.date_depense)) AS total
@@ -133,7 +134,6 @@ exports.getDepense = (req, res) => {
     });
   });
 };
-
 
 exports.getDepenseDate = (req, res) => {
   const { dateId } = req.query;
