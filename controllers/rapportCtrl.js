@@ -69,7 +69,7 @@ exports.getRapportVenteV = (req, res) => {
   const offset = (page - 1) * pageSize;
 
   let totalQuery = `
-    SELECT COUNT(*) AS total 
+    SELECT COUNT(v.id_vente) AS total 
     FROM vente v
     INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
     INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
@@ -83,6 +83,7 @@ exports.getRapportVenteV = (req, res) => {
     ${marque_id && marque_id !== 'undefined' ? `AND m.id_marque = ${marque_id}` : ''}
     ${couleur_id && couleur_id !== 'undefined' ? `AND couleur.id_couleur = ${couleur_id}` : ''}
     ${taille_id && taille_id !== 'undefined' ? `AND taille.id_taille = ${taille_id}` : ''}
+    GROUP BY vp.code_variant, couleur.description
   `;
 
   let q = `
