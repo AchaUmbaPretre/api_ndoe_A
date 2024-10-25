@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-exports.getRapportVenteV = (req, res) => {
+/* exports.getRapportVenteV = (req, res) => {
   const { start_date, end_date, marque_id,couleur_id, taille_id } = req.query;
 
   let q = `
@@ -60,7 +60,94 @@ WHERE v.est_supprime = 0
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
+}; */
+
+exports.getRapportVenteV = (req, res) => {
+  const { start_date, end_date, marque_id, couleur_id, taille_id } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 15;
+  const offset = (page - 1) * pageSize;
+
+  let totalQuery = `
+    SELECT COUNT(*) AS total 
+    FROM vente v
+    INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
+    INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
+    INNER JOIN produit p ON vp.id_produit = p.id_produit
+    INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
+    INNER JOIN marque m ON p.id_marque = m.id_marque
+    INNER JOIN taille ON vp.id_taille = taille.id_taille
+    WHERE v.est_supprime = 0
+    ${start_date ? `AND DATE(v.date_vente) >= '${start_date}'` : ''}
+    ${end_date ? `AND DATE(v.date_vente) <= '${end_date}'` : ''}
+    ${marque_id && marque_id !== 'undefined' ? `AND m.id_marque = ${marque_id}` : ''}
+    ${couleur_id && couleur_id !== 'undefined' ? `AND couleur.id_couleur = ${couleur_id}` : ''}
+    ${taille_id && taille_id !== 'undefined' ? `AND taille.id_taille = ${taille_id}` : ''}
+  `;
+
+  let q = `
+  SELECT
+    m.id_marque,
+    taille.taille,
+    SUM(v.quantite) AS quantite_vendue,
+    SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
+    SUM(vp.stock) AS quantite_en_stock,
+    COUNT(DISTINCT v.id_vente) AS nombre_vendu,
+    vp.img,
+    m.nom AS nom_marque,
+    categorie.nom_categorie,
+    couleur.description,
+    v.date_vente,
+    vp.code_variant
+  FROM vente v
+  INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
+  INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
+  INNER JOIN produit p ON vp.id_produit = p.id_produit
+  INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
+  INNER JOIN marque m ON p.id_marque = m.id_marque
+  INNER JOIN taille ON vp.id_taille = taille.id_taille
+  INNER JOIN categorie ON p.id_categorie = categorie.id_categorie
+  WHERE v.est_supprime = 0
+  ${start_date ? `AND DATE(v.date_vente) >= '${start_date}'` : ''}
+  ${end_date ? `AND DATE(v.date_vente) <= '${end_date}'` : ''}
+  ${marque_id && marque_id !== 'undefined' ? `AND m.id_marque = ${marque_id}` : ''}
+  ${couleur_id && couleur_id !== 'undefined' ? `AND couleur.id_couleur = ${couleur_id}` : ''}
+  ${taille_id && taille_id !== 'undefined' ? `AND taille.id_taille = ${taille_id}` : ''}
+  GROUP BY vp.code_variant, couleur.description
+  ORDER BY v.date_vente DESC
+  LIMIT ? OFFSET ?
+  `;
+
+  try {
+    db.query(totalQuery, (error, totalResult) => {
+      if (error) {
+        console.log(error);
+        return res.status(500).json({ error: 'Erreur lors du calcul du total' });
+      }
+
+      const total = totalResult[0].total;
+
+      db.query(q, [pageSize, offset], (error, data) => {
+        if (error) {
+          console.log(error);
+          return res.status(500).json({ error: 'Erreur lors de la récupération des données' });
+        }
+
+        return res.status(200).json({
+          total,
+          page,
+          pageSize,
+          data
+        });
+      });
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: error.message });
+  }
 };
+
+
 
 exports.getRapportDateRecente = (req, res) => {
   const { start_date, end_date,searchValue } = req.query;
