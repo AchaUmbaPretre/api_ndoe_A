@@ -83,7 +83,6 @@ exports.getRapportVenteV = (req, res) => {
     ${marque_id && marque_id !== 'undefined' ? `AND m.id_marque = ${marque_id}` : ''}
     ${couleur_id && couleur_id !== 'undefined' ? `AND couleur.id_couleur = ${couleur_id}` : ''}
     ${taille_id && taille_id !== 'undefined' ? `AND taille.id_taille = ${taille_id}` : ''}
-    GROUP BY vp.code_variant, couleur.description
   `;
 
   let q = `
@@ -147,8 +146,6 @@ exports.getRapportVenteV = (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
-
-
 
 exports.getRapportDateRecente = (req, res) => {
   const { start_date, end_date,searchValue } = req.query;
