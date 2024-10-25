@@ -181,19 +181,9 @@ exports.getLivraisonDetail = (req, res) => {
   const offset = (page - 1) * pageSize;
 
   const totalQuery = `
-    SELECT 
-      COUNT(DISTINCT detail_livraison.id_detail_livraison) AS total
+        SELECT 
+      COUNT(DISTINCT detail_livraison.id_commande) AS total
     FROM detail_livraison
-    LEFT JOIN varianteproduit ON detail_livraison.id_varianteProduit = varianteproduit.id_varianteProduit
-    LEFT JOIN commande ON detail_livraison.id_commande = commande.id_commande
-    LEFT JOIN client ON commande.id_client = client.id
-    LEFT JOIN produit ON varianteproduit.id_produit = produit.id_produit
-    LEFT JOIN marque ON produit.id_marque = marque.id_marque
-    LEFT JOIN users ON detail_livraison.id_livreur = users.id
-    LEFT JOIN taille ON varianteproduit.id_taille = taille.id_taille
-    LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
-    LEFT JOIN commune ON adresse.id_commune = commune.id_commune
-    WHERE produit.est_supprime = 0
   `;
 
   let q = `
