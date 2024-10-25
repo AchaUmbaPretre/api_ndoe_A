@@ -45,36 +45,6 @@ exports.deleteCatDepense = (req, res) => {
 
 //Depenses
 /* exports.getDepense = (req, res) => {
-    const q = `SELECT CASE DAYOFWEEK(depenses.date_depense)
-                WHEN 1 THEN 'dimanche'
-                WHEN 2 THEN 'lundi'
-                WHEN 3 THEN 'mardi'
-                WHEN 4 THEN 'mercredi'
-                WHEN 5 THEN 'jeudi'
-                WHEN 6 THEN 'vendredi'
-                WHEN 7 THEN 'samedi'
-              END AS jour,
-              DATE(depenses.date_depense) AS date_depense,
-                  SUM(depenses.montant) AS montant_total_dollars,
-                  SUM(depenses.montant_franc) AS montant_total_francs,
-              CASE
-                  WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
-                  ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
-              END AS montant_total_combine, users.username AS createur
-              FROM depenses
-                INNER JOIN users ON depenses.user_cr = users.id
-                INNER JOIN categorie_depense ON depenses.id_catDepense = categorie_depense.id_catDepense
-                GROUP BY DATE(depenses.date_depense)
-                `;
-     
-    db.query(q, (error, data) => {
-        if (error) res.status(500).send(error);
-        return res.status(200).json(data);
-    });
-} */
-
-
-exports.getDepense = (req, res) => {
   const q = `
       SELECT CASE DAYOFWEEK(DATE(depenses.date_depense))
           WHEN 1 THEN 'dimanche'
@@ -102,6 +72,65 @@ exports.getDepense = (req, res) => {
   db.query(q, (error, data) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
+  });
+}; */
+
+exports.getDepense = (req, res) => {
+  const { page = 1, pageSize = 15 } = req.query;
+  const offset = (page - 1) * pageSize;
+
+  const totalQuery = `
+    SELECT COUNT(DISTINCT DATE(depenses.date_depense)) AS total
+    FROM depenses
+    INNER JOIN users ON depenses.user_cr = users.id
+    INNER JOIN categorie_depense ON depenses.id_catDepense = categorie_depense.id_catDepense
+  `;
+
+  const q = `
+    SELECT CASE DAYOFWEEK(DATE(depenses.date_depense))
+      WHEN 1 THEN 'dimanche'
+      WHEN 2 THEN 'lundi'
+      WHEN 3 THEN 'mardi'
+      WHEN 4 THEN 'mercredi'
+      WHEN 5 THEN 'jeudi'
+      WHEN 6 THEN 'vendredi'
+      WHEN 7 THEN 'samedi'
+    END AS jour,
+    DATE_FORMAT(CONVERT_TZ(depenses.date_depense, '+00:00', @@session.time_zone), '%Y-%m-%d') AS date_depense,
+    SUM(depenses.montant) AS montant_total_dollars,
+    SUM(depenses.montant_franc) AS montant_total_francs,
+    CASE
+      WHEN SUM(depenses.montant) IS NOT NULL THEN ROUND(SUM(depenses.montant), 2) + ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+      ELSE ROUND(SUM(depenses.montant_franc * 0.00036364), 2)
+    END AS montant_total_combine, 
+    users.username AS createur
+    FROM depenses
+    INNER JOIN users ON depenses.user_cr = users.id
+    INNER JOIN categorie_depense ON depenses.id_catDepense = categorie_depense.id_catDepense
+    GROUP BY DATE(depenses.date_depense)
+    ORDER BY DATE(depenses.date_depense) DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  db.query(totalQuery, (error, totalResult) => {
+    if (error) {
+      return res.status(500).send(error);
+    }
+
+    const total = totalResult[0].total;
+
+    db.query(q, [parseInt(pageSize), parseInt(offset)], (error, data) => {
+      if (error) {
+        return res.status(500).send(error);
+      }
+
+      return res.status(200).json({
+        total,
+        page,
+        pageSize,
+        data
+      });
+    });
   });
 };
 
