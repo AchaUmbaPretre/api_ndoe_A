@@ -1604,11 +1604,13 @@ exports.getMouvementDepart = (req, res) => {
 }; */
 
 exports.getMouvementRetourner = (req, res) => {
-  const { page = 1, pageSize = 15 } = req.query;
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 15;
   const offset = (page - 1) * pageSize;
 
+
   const totalQuery = `
-    SELECT COUNT(mouvement_stock.id_mouvement) as total 
+    SELECT  COUNT(DISTINCT mouvement_stock.id_mouvement) as total 
     FROM mouvement_stock 
     INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
     INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
@@ -1658,22 +1660,18 @@ exports.getMouvementRetourner = (req, res) => {
     LIMIT ? OFFSET ?
   `;
 
-  // Exécuter la requête pour le total
   db.query(totalQuery, (error, totalResult) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Récupérer le total des mouvements
     const total = totalResult[0].total;
 
-    // Exécuter la requête pour les mouvements avec pagination
     db.query(mouvementQuery, [pageSize, offset], (error, mouvementData) => {
       if (error) {
         return res.status(500).json({ error: error.message });
       }
 
-      // Modifier les données de mouvement pour ajouter le signe
       const formattedMouvements = mouvementData.map(mouvement => {
         let signe = mouvement.id_type_mouvement === 1 ? '+' : '-';
         mouvement.quantite = `${signe}${mouvement.quantite}`;
@@ -1690,7 +1688,6 @@ exports.getMouvementRetourner = (req, res) => {
     });
   });
 };
-
 
 
 exports.getMouvementEchange = (req, res) => {
