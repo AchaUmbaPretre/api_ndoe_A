@@ -400,6 +400,7 @@ exports.getVariantProduitOne = (req, res) => {
         INNER JOIN taille_pays ON varianteproduit.code_variant = taille_pays.code_variant
         INNER JOIN famille ON categorie.id_famille = famille.id_famille 
       WHERE varianteproduit.id_varianteProduit = '${id}'
+      GROUP BY varianteproduit.id_varianteProduit
       ORDER BY taille.taille DESC 
     `;
     
@@ -706,6 +707,37 @@ exports.postVariantProduit = (req, res) => {
   }
 };
 
+exports.putVariantProduit = async (req, res) => {
+  const { id } = req.params;
+  const { stock } = req.body;
+
+  if (!id || isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid variant ID provided' });
+  }
+
+  try {
+      const q = `
+          UPDATE varianteproduit
+          SET 
+              stock = ?
+          WHERE id_varianteProduit = ?
+      `;
+    
+      const values = [stock, id];
+
+      db.query(q, values, (error, data)=>{
+          if(error){
+              console.log(error)
+              return res.status(404).json({ error: 'user record not found' });
+          }
+          return res.json({ message: 'User record updated successfully' });
+      })
+  } catch (err) {
+      console.error("Error updating user :", err);
+      return res.status(500).json({ error: 'Failed to update user record' });
+  }
+}
+
 exports.postEntreeStock = (req, res) => {
 
   const qVarianteProduit =
@@ -923,7 +955,6 @@ exports.getReceptionOne = (req, res) => {
       return res.status(200).json(data);
   });
 }
-
 
 exports.deleteVariantProduit = (req, res) => {
   const {id} = req.params;
