@@ -353,7 +353,6 @@ exports.postClient = (req, res) => {
             }
 
             const clientId = clientData.insertId;
-            console.log('Inserted client ID:', clientId); // Debug log
             const valuesAdresse = [
               clientId,
               req.body.id_province,
@@ -378,7 +377,6 @@ exports.postClient = (req, res) => {
                 req.body.telephone
               ];
 
-              console.log('Telephone values:', valuesTelephone); // Debug log
               connection.query(insertTelephoneQuery, valuesTelephone, (error, telephoneData) => {
                 if (error) {
                   console.error("ERROR NETWORK:", error);
