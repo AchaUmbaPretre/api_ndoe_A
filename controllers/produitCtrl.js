@@ -368,7 +368,8 @@ exports.getVariantProduitAll = (req, res) => {
              marque.nom AS nom_marque, 
              vp.stock AS total_stock, 
              vp.img,
-             categorie.nom_categorie
+             categorie.nom_categorie,
+             vp.created_at
       FROM varianteproduit vp
       INNER JOIN taille_pays tp ON vp.id_taille = tp.id_taille 
                               AND vp.id_couleur = tp.id_couleur 
