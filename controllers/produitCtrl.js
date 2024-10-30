@@ -430,8 +430,6 @@ exports.getListeVariantProduit = (req, res) => {
     });
   };
   
-
-
 exports.getVariantProduitOne = (req, res) => {
     const { id } = req.params;
   
