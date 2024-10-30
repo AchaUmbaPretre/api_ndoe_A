@@ -350,14 +350,13 @@ exports.getVariantProduitAll = (req, res) => {
     });
   }
 
-  exports.getListeVariantProduit = (req, res) => {
+exports.getListeVariantProduit = (req, res) => {
     const { page = 1, pageSize = 10 } = req.query;
     const id_cat = req.query.id_cat !== 'undefined' ? req.query.id_cat : null;
     const id_marque = req.query.id_marque !== 'undefined' ? req.query.id_marque : null;
     const start_date = req.query.start_date !== 'undefined' ? req.query.start_date : null;
     const end_date = req.query.end_date !== 'undefined' ? req.query.end_date : null;
   
-    // Requête principale pour récupérer les données paginées
     const query = `
       SELECT SUM(vp.stock * tp.prix) AS total, 
              tp.prix AS montant_total_achats, 
