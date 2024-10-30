@@ -350,9 +350,14 @@ exports.getVariantProduitAll = (req, res) => {
     });
   }
 
-exports.getListeVariantProduit = (req, res) => {
-    const { id_cat, id_marque, start_date, end_date, page = 1, pageSize = 10 } = req.query;
+  exports.getListeVariantProduit = (req, res) => {
+    const { page = 1, pageSize = 10 } = req.query;
+    const id_cat = req.query.id_cat !== 'undefined' ? req.query.id_cat : null;
+    const id_marque = req.query.id_marque !== 'undefined' ? req.query.id_marque : null;
+    const start_date = req.query.start_date !== 'undefined' ? req.query.start_date : null;
+    const end_date = req.query.end_date !== 'undefined' ? req.query.end_date : null;
   
+    // Requête principale pour récupérer les données paginées
     const query = `
       SELECT SUM(vp.stock * tp.prix) AS total, 
              tp.prix AS montant_total_achats, 
@@ -381,6 +386,7 @@ exports.getListeVariantProduit = (req, res) => {
       LIMIT ?, ?;
     `;
   
+    // Requête pour compter le nombre total d'éléments sans pagination
     const countQuery = `
       SELECT COUNT(DISTINCT vp.id_varianteProduit) AS TotalItems
       FROM varianteproduit vp
@@ -398,6 +404,7 @@ exports.getListeVariantProduit = (req, res) => {
       ${end_date ? `AND DATE(vp.created_at) <= ?` : ''}
     `;
   
+    // Paramètres pour les requêtes
     const params = [
       ...(id_cat ? [id_cat] : []),
       ...(id_marque ? [id_marque] : []),
@@ -413,6 +420,7 @@ exports.getListeVariantProduit = (req, res) => {
   
       const totalItems = countResult[0].TotalItems;
   
+      // Ajoute les paramètres de pagination
       const paginatedParams = [...params, (page - 1) * pageSize, parseInt(pageSize)];
   
       db.query(query, paginatedParams, (error, data) => {
@@ -420,7 +428,8 @@ exports.getListeVariantProduit = (req, res) => {
           console.error('Erreur lors de la récupération des variantes de produits :', error);
           return res.status(500).send('Une erreur est survenue lors de la récupération des variantes de produits.');
         }
-          return res.status(200).json({
+  
+        return res.status(200).json({
           data,
           totalItems: totalItems,
           currentPage: parseInt(page),
@@ -429,6 +438,7 @@ exports.getListeVariantProduit = (req, res) => {
       });
     });
   };
+  
   
 exports.getVariantProduitOne = (req, res) => {
     const { id } = req.params;
