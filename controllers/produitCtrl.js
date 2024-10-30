@@ -413,10 +413,8 @@ exports.getListeVariantProduit = (req, res) => {
   
       const totalItems = countResult[0].TotalItems;
   
-      // Ajoute les paramètres de pagination
       const paginatedParams = [...params, (page - 1) * pageSize, parseInt(pageSize)];
   
-      // Exécute la requête principale pour les données paginées
       db.query(query, paginatedParams, (error, data) => {
         if (error) {
           console.error('Erreur lors de la récupération des variantes de produits :', error);
