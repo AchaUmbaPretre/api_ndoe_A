@@ -351,34 +351,88 @@ exports.getVariantProduitAll = (req, res) => {
   }
 
 exports.getListeVariantProduit = (req, res) => {
-  const id_cat = req.query.id_cat;
-  const id_marque = req.query.id_marque;
-  const start_date = req.query.start_date;
-  const end_date = req.query.end_date;
-
-    const q = `SELECT SUM(vp.stock * tp.prix) AS total, tp.prix AS montant_total_achats, taille.taille, produit.nom_produit, vp.id_varianteProduit, vp.code_variant, marque.nom AS nom_marque, vp.stock AS total_stock, vp.img,categorie.nom_categorie
-              FROM varianteproduit vp 
-                INNER JOIN taille_pays tp ON vp.id_taille = tp.id_taille AND vp.id_couleur = tp.id_couleur AND vp.code_variant = tp.code_variant 
-                INNER JOIN taille ON taille.id_taille = vp.id_taille 
-                INNER JOIN produit ON vp.id_produit = produit.id_produit 
-                INNER JOIN marque ON marque.id_marque = produit.id_marque 
-                INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
-                WHERE produit.est_supprime = 0
-                ${id_cat ? `AND categorie.id_categorie = ${id_cat}` : ''}
-                ${id_marque ? `AND marque.id_marque = ${id_marque}` : ''}
-                ${start_date ? `AND DATE(varianteproduit.created_at) >= '${start_date}'` : ''}
-                ${end_date ? `AND DATE(varianteproduit.created_at) <= '${end_date}'` : ''}
-              GROUP BY vp.id_varianteProduit;`
-     
-    db.query(q, (error, data) => {
-      if (error) {
-        console.log(error)
-        console.error('Erreur lors de la récupération des variantes de produits :', error);
-        return res.status(500).send('Une erreur est survenue lors de la récupération des variantes de produits.',error);
+    const { id_cat, id_marque, start_date, end_date, page = 1, pageSize = 10 } = req.query;
+  
+    const query = `
+      SELECT SUM(vp.stock * tp.prix) AS total, 
+             tp.prix AS montant_total_achats, 
+             taille.taille, 
+             produit.nom_produit, 
+             vp.id_varianteProduit, 
+             vp.code_variant, 
+             marque.nom AS nom_marque, 
+             vp.stock AS total_stock, 
+             vp.img,
+             categorie.nom_categorie
+      FROM varianteproduit vp
+      INNER JOIN taille_pays tp ON vp.id_taille = tp.id_taille 
+                              AND vp.id_couleur = tp.id_couleur 
+                              AND vp.code_variant = tp.code_variant 
+      INNER JOIN taille ON taille.id_taille = vp.id_taille 
+      INNER JOIN produit ON vp.id_produit = produit.id_produit 
+      INNER JOIN marque ON marque.id_marque = produit.id_marque 
+      INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
+      WHERE produit.est_supprime = 0
+      ${id_cat ? `AND categorie.id_categorie = ?` : ''}
+      ${id_marque ? `AND marque.id_marque = ?` : ''}
+      ${start_date ? `AND DATE(vp.created_at) >= ?` : ''}
+      ${end_date ? `AND DATE(vp.created_at) <= ?` : ''}
+      GROUP BY vp.id_varianteProduit
+      LIMIT ?, ?;
+    `;
+  
+    // Requête pour compter le nombre total d'éléments sans pagination
+    const countQuery = `
+      SELECT COUNT(DISTINCT vp.id_varianteProduit) AS TotalItems
+      FROM varianteproduit vp
+      INNER JOIN taille_pays tp ON vp.id_taille = tp.id_taille 
+                              AND vp.id_couleur = tp.id_couleur 
+                              AND vp.code_variant = tp.code_variant 
+      INNER JOIN taille ON taille.id_taille = vp.id_taille 
+      INNER JOIN produit ON vp.id_produit = produit.id_produit 
+      INNER JOIN marque ON marque.id_marque = produit.id_marque 
+      INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
+      WHERE produit.est_supprime = 0
+      ${id_cat ? `AND categorie.id_categorie = ?` : ''}
+      ${id_marque ? `AND marque.id_marque = ?` : ''}
+      ${start_date ? `AND DATE(vp.created_at) >= ?` : ''}
+      ${end_date ? `AND DATE(vp.created_at) <= ?` : ''}
+    `;
+  
+    const params = [
+      ...(id_cat ? [id_cat] : []),
+      ...(id_marque ? [id_marque] : []),
+      ...(start_date ? [start_date] : []),
+      ...(end_date ? [end_date] : [])
+    ];
+  
+    db.query(countQuery, params, (countError, countResult) => {
+      if (countError) {
+        console.error('Erreur lors du comptage des variantes de produits :', countError);
+        return res.status(500).send('Une erreur est survenue lors du comptage des variantes de produits.');
       }
-      return res.status(200).json(data);
+  
+      const totalItems = countResult[0].TotalItems;
+  
+      // Ajoute les paramètres de pagination
+      const paginatedParams = [...params, (page - 1) * pageSize, parseInt(pageSize)];
+  
+      // Exécute la requête principale pour les données paginées
+      db.query(query, paginatedParams, (error, data) => {
+        if (error) {
+          console.error('Erreur lors de la récupération des variantes de produits :', error);
+          return res.status(500).send('Une erreur est survenue lors de la récupération des variantes de produits.');
+        }
+          return res.status(200).json({
+          data,
+          TotalItems: totalItems,
+          currentPage: parseInt(page),
+          pageSize: parseInt(pageSize),
+        });
+      });
     });
-  }
+  };
+  
 
 
 exports.getVariantProduitOne = (req, res) => {
