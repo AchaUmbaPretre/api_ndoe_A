@@ -381,7 +381,6 @@ exports.getListeVariantProduit = (req, res) => {
       LIMIT ?, ?;
     `;
   
-    // Requête pour compter le nombre total d'éléments sans pagination
     const countQuery = `
       SELECT COUNT(DISTINCT vp.id_varianteProduit) AS TotalItems
       FROM varianteproduit vp
@@ -425,7 +424,7 @@ exports.getListeVariantProduit = (req, res) => {
         }
           return res.status(200).json({
           data,
-          TotalItems: totalItems,
+          totalItems: totalItems,
           currentPage: parseInt(page),
           pageSize: parseInt(pageSize),
         });
