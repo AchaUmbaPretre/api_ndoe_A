@@ -494,76 +494,7 @@ ORDER BY taille.taille DESC;
     if (error) return res.status(500).send(error);
     return res.status(200).json(data);
   });
-}
-
-/* exports.getVariantProduitFiltrage = (req, res) => {
-  const familleFilter = req.params.id.split(',');
-
-  const q = `SELECT varianteproduit.*, produit.nom_produit, produit.date_entrant, marque.nom AS nom_marque,
-  categorie.nom_categorie, matiere.nom_matiere, cible.nom_cible, taille.taille AS pointure, pays.code_pays,
-  couleur.description, taille_pays.prix, famille.nom AS nom_famille
-  FROM varianteproduit
-  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit 
-  INNER JOIN marque ON produit.id_marque = marque.id_marque
-  INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
-  INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
-  INNER JOIN cible ON produit.id_cible = cible.id_cible
-  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN pays ON taille.id_pays = pays.id_pays
-  INNER JOIN couleur ON varianteproduit.id_couleur = couleur.id_couleur
-  INNER JOIN taille_pays ON varianteproduit.code_variant = taille_pays.code_variant
-  INNER JOIN famille ON categorie.id_famille = famille.id_famille 
-  WHERE famille.id_famille IN (${familleFilter.map(famille => `'${famille}'`).join(',')})
-  GROUP BY varianteproduit.img
-  `;
-  
-  db.query(q, (error, data) => {
-    if (error) {
-      return res.status(500).send(error);
-    }
-    return res.status(200).json(data);
-  });
 };
- */
-/* exports.getVariantProduitFiltrage = (req, res) => {
-  const familleFilter = req.query.id_famille.split(',');
-  const marqueFilter = req.query.id_marque.split(',');
-  const cibleFilter = req.query.id_cible.split(',');
-  const tailleFilter = req.query.id_taille.split(',');
-  const itemsPerPage = req.query.itemsPerPage;
-  const currentPage = req.query.currentPage;
-
-  const q = `SELECT varianteproduit.*, produit.nom_produit, produit.date_entrant, marque.nom AS nom_marque,
-  categorie.nom_categorie, matiere.nom_matiere, cible.nom_cible, taille.taille AS pointure, pays.code_pays,
-  couleur.description, taille_pays.prix, famille.nom AS nom_famille
-  FROM varianteproduit
-  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit 
-  INNER JOIN marque ON produit.id_marque = marque.id_marque
-  INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
-  INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
-  INNER JOIN cible ON produit.id_cible = cible.id_cible
-  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN pays ON taille.id_pays = pays.id_pays
-  INNER JOIN couleur ON varianteproduit.id_couleur = couleur.id_couleur
-  INNER JOIN taille_pays ON varianteproduit.code_variant = taille_pays.code_variant
-  INNER JOIN famille ON categorie.id_famille = famille.id_famille 
-  WHERE produit.est_supprime = 0 AND produit.etatProduit = 'Actif'
-    ${familleFilter[0] !== '' && familleFilter[0] !== 'null' ? `AND famille.id_famille IN (${familleFilter.map(famille => `'${famille}'`).join(',')})` : ''}
-    ${marqueFilter[0] !== 'null'  ? `AND marque.id_marque IN (${marqueFilter.map(marque => `'${marque}'`).join(',')})` : ''}
-    ${cibleFilter[0] !== 'null'  ? `AND cible.id_cible IN (${cibleFilter.map(cible => `'${cible}'`).join(',')})` : ''}
-    ${tailleFilter[0] !== 'null'  ? `AND taille.id_taille IN (${tailleFilter.map(taille => `'${taille}'`).join(',')})` : ''}
-
-  GROUP BY varianteproduit.img
-  `;
-  
-  db.query(q, (error, data) => {
-    if (error) {
-      return res.status(500).send(error);
-    }
-    return res.status(200).json(data);
-  });
-} */;
-
 
 exports.getVariantProduitFiltrage = (req, res) => {
   const safeSplit = (paramValue, defaultValue = []) => {
@@ -719,7 +650,7 @@ exports.getVariantProduitFiltrageTaille = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
     });
-  };
+};
 
 exports.postVariantProduit = (req, res) => {
 
@@ -827,7 +758,7 @@ exports.putVariantProduit = async (req, res) => {
       console.error("Error updating user :", err);
       return res.status(500).json({ error: 'Failed to update user record' });
   }
-}
+};
 
 exports.postEntreeStock = (req, res) => {
 
@@ -951,7 +882,7 @@ exports.getReception = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getReceptionJour = (req, res) => {
 
@@ -982,7 +913,7 @@ exports.getReceptionJour = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getReceptionJour7 = (req, res) => {
 
@@ -1013,7 +944,7 @@ exports.getReceptionJour7 = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getReceptionOne = (req, res) => {
 
@@ -1045,7 +976,7 @@ exports.getReceptionOne = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.deleteVariantProduit = (req, res) => {
   const {id} = req.params;
@@ -1055,7 +986,7 @@ exports.deleteVariantProduit = (req, res) => {
       if (err) return res.send(err);
     return res.json(data);
   })
-}
+};
   
   //Couleur
 exports.getCouleur = (req, res) => {
@@ -1094,7 +1025,6 @@ exports.deleteCouleur = (req, res) => {
     return res.json(data);
   })
 };
-
 
 //Categorie
 exports.getCategorie = (req, res) => {
@@ -1157,7 +1087,6 @@ db.query(q, [nom_categorie,id], (err, data) => {
     return res.json(data);
   });
 }
-
 
 //Emplacement
 exports.getEmplacement = (req, res) => {
