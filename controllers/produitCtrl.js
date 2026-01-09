@@ -11,29 +11,7 @@ exports.getProduitCount = (req, res) => {
 
     return res.status(200).json(data);
 })
-}
-
-/* exports.getProduit = (req, res) => {
-  const {id_marque, categorie, page = 1, pageSize = 15} = req.query;
-
-    const q = `SELECT produit.*,categorie.nom_categorie, marque.nom AS nom_marque, matiere.nom_matiere, famille.nom AS nom_famille, vp.img FROM produit
-                INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
-                INNER JOIN marque ON produit.id_marque = marque.id_marque
-                INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
-                INNER JOIN famille ON categorie.id_famille = famille.id_famille
-                LEFT JOIN varianteproduit vp ON produit.id_produit = vp.id_produit
-              WHERE produit.est_supprime = 0
-              ${id_marque ? `AND marque.id_marque = '${id_marque}'` : ''}
-              ${categorie ? `AND categorie.id_categorie = '${categorie}'` : ''}
-              GROUP BY produit.code_variante
-              ORDER BY produit.date_entrant
-              `
-     
-    db.query(q, (error, data) => {
-        if (error) res.status(500).send(error);
-        return res.status(200).json(data);
-    });
-}; */
+};
 
 exports.getProduit = (req, res) => {
   const { id_marque, categorie, page = 1, pageSize = 15 } = req.query;
@@ -115,8 +93,6 @@ exports.getProduit = (req, res) => {
     });
   });
 };
-
-
 
 exports.getProduitOne = (req,res) => {
 
@@ -497,11 +473,12 @@ ORDER BY taille.taille DESC;
 };
 
 exports.getVariantProduitFiltrage = (req, res) => {
-  const safeSplit = (paramValue, defaultValue = []) => {
-    if (!paramValue || paramValue === 'null' || paramValue === '') {
-      return defaultValue;
-    }
-    return paramValue.split(',').filter(item => item && item !== 'null' && item !== '');
+  const safeSplit = (value) => {
+    if (typeof value !== 'string') return [];
+    return value
+      .split(',')
+      .map(v => v.trim())
+      .filter(v => v && v !== 'null');
   };
   
   const familleFilter = safeSplit(req.query.id_famille);
@@ -1614,46 +1591,6 @@ exports.getMouvementDepart = (req, res) => {
   });
 };
 
-/* exports.getMouvementRetourner = (req, res) => {
-
-  const q = `SELECT mouvement_stock.*, varianteproduit.stock, varianteproduit.img, type_mouvement.type_mouvement, marque.nom AS nom_marque, taille.taille,client.nom AS nom_client, client.id AS id_client1,client.telephone, users.username AS livreur, SUM(mouvement_stock.quantite) AS total_varianteproduit, users.id AS id_livreur, commune.nom_commune FROM mouvement_stock 
-  INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit 
-  INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement 
-  INNER JOIN detail_commande ON mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit 
-  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
-  INNER JOIN marque ON produit.id_marque = marque.id_marque
-  INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
-  INNER JOIN detail_livraison ON commande.id_commande = detail_livraison.id_commande
-  INNER JOIN users ON detail_livraison.id_livreur = users.id
-  LEFT JOIN client ON commande.id_client = client.id
-  INNER JOIN adresse ON commande.id_adresse = adresse.id_adresse
-  INNER JOIN commune ON adresse.id_commune = commune.id_commune
-    WHERE detail_commande.est_supprime = 0 AND mouvement_stock.id_type_mouvement = 5
-    GROUP BY mouvement_stock.id_mouvement
-    ORDER BY mouvement_stock.date_mouvement DESC
-            `;
-
-  db.query(q, (error, data) => {
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    const mouvementData = data.map(mouvement => {
-      let signe = "";
-      if (mouvement.id_type_mouvement === 1) {
-        signe = "+";
-      } else if (mouvement.id_type_mouvement === 2) {
-        signe = "-";
-      }
-      mouvement.quantite = `${signe}${mouvement.quantite}`;
-      return mouvement;
-    });
-
-    return res.status(200).json(mouvementData);
-  });
-}; */
-
 exports.getMouvementRetourner = (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 15;
@@ -1777,103 +1714,6 @@ exports.getMouvementEchange = (req, res) => {
     return res.status(200).json(data);
   });
 };
-
-/* exports.getMouvement = (req, res) => {
-  const { start_date, end_date } = req.query;
-
-  const q = `SELECT
-          mouvement_stock.*,
-          varianteproduit.stock,
-          varianteproduit.img,
-          type_mouvement.type_mouvement,
-          marque.nom AS nom_marque,
-          taille.taille,
-          client.nom AS nom_client,
-          client.id AS id_client1,
-          client.telephone,
-          commande.id_shop,
-          users.username AS livreur,
-          users.id AS id_livreur,
-          commune.nom_commune,
-          (
-            SELECT SUM(mouvement_stock.quantite)
-            FROM mouvement_stock
-            INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-            INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-            WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement IN (12, 4, 7)
-            LIMIT 1
-          ) AS total_varianteproduit,
-          (
-            SELECT SUM(mouvement_stock.quantite)
-            FROM mouvement_stock
-            INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-            INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-            WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement = 4
-            LIMIT 1
-          ) AS total_vendu,
-          (
-            SELECT SUM(mouvement_stock.quantite)
-            FROM mouvement_stock
-            INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-            INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-            WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement = 5
-            LIMIT 1
-            ) AS total_retours,
-            (
-              SELECT SUM(mouvement_stock.quantite)
-              FROM mouvement_stock
-              INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-              INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-              WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement = 7
-              LIMIT 1
-              ) AS total_echange,
-          (
-            SELECT mouvement_stock.id_type_mouvement
-            FROM mouvement_stock
-            INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-            INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-            WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement = 5
-            LIMIT 1
-          ) AS id_retours,
-          (
-            SELECT mouvement_stock.id_type_mouvement
-            FROM mouvement_stock
-            INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-            INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-            WHERE detail_commande.est_supprime = 0 AND commande.id_commande = detail_commande.id_commande AND type_mouvement.id_type_mouvement = 4
-            LIMIT 1
-          ) AS id_vente
-        FROM
-          mouvement_stock
-          INNER JOIN varianteproduit ON mouvement_stock.id_varianteProduit = varianteproduit.id_varianteProduit
-          INNER JOIN type_mouvement ON mouvement_stock.id_type_mouvement = type_mouvement.id_type_mouvement
-          INNER JOIN detail_commande ON mouvement_stock.id_commande = detail_commande.id_commande AND mouvement_stock.id_varianteProduit = detail_commande.id_varianteProduit
-          INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-          INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit
-          INNER JOIN marque ON produit.id_marque = marque.id_marque
-          INNER JOIN commande ON mouvement_stock.id_commande = commande.id_commande
-          INNER JOIN client ON commande.id_client = client.id
-          INNER JOIN detail_livraison ON detail_commande.id_detail = detail_livraison.id_detail_commande
-          INNER JOIN users ON detail_livraison.id_livreur = users.id
-          LEFT JOIN adresse ON commande.id_adresse = adresse.id_adresse
-          LEFT JOIN commune ON adresse.id_commune = commune.id_commune
-                WHERE detail_commande.est_supprime = 0
-            ${start_date ? `AND DATE(mouvement_stock.date_mouvement) >= '${start_date}'` : ''}
-            ${end_date ? `AND DATE(mouvement_stock.date_mouvement) <= '${end_date}'` : ''}
-            GROUP BY commande.id_commande
-            ORDER BY mouvement_stock.date_mouvement DESC
-            `;
-
-  db.query(q, (error, data) => {
-    if (error) {
-      console.log(error)
-      return res.status(500).json({ error: error.message });
-    }
-
-    return res.status(200).json(data);
-  });
-}; */
-
 
 exports.getMouvement = (req, res) => {
   const { start_date, end_date, page = 1, pageSize = 15 } = req.query;
@@ -2322,4 +2162,3 @@ exports.putMouvement = (req, res) => {
     return res.json(data);
   });
 };
-
