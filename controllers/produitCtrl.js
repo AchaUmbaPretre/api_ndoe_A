@@ -566,48 +566,80 @@ ORDER BY taille.taille DESC;
 
 
 exports.getVariantProduitFiltrage = (req, res) => {
-  const familleFilter = req.query.id_famille.split(',');
-  const marqueFilter = req.query.id_marque.split(',');
-  const cibleFilter = req.query.id_cible.split(',');
-  const tailleFilter = req.query.id_taille.split(',');
-  const couleurFilter = req.query.id_couleur.split(',');
-  const matiereFilter = req.query.id_matiere.split(',');
-  const itemsPerPage = req.query.itemsPerPage;
-  const currentPage = req.query.currentPage;
+  const safeSplit = (paramValue, defaultValue = []) => {
+    if (!paramValue || paramValue === 'null' || paramValue === '') {
+      return defaultValue;
+    }
+    return paramValue.split(',').filter(item => item && item !== 'null' && item !== '');
+  };
+  
+  const familleFilter = safeSplit(req.query.id_famille);
+  const marqueFilter = safeSplit(req.query.id_marque);
+  const cibleFilter = safeSplit(req.query.id_cible);
+  const tailleFilter = safeSplit(req.query.id_taille);
+  const couleurFilter = safeSplit(req.query.id_couleur);
+  const matiereFilter = safeSplit(req.query.id_matiere);
+
+  // Construction sécurisée de la requête SQL
+  let conditions = [];
+  let params = [];
+
+  if (familleFilter.length > 0) {
+    conditions.push(`famille.id_famille IN (${familleFilter.map(() => '?').join(',')})`);
+    params.push(...familleFilter);
+  }
+
+  if (marqueFilter.length > 0) {
+    conditions.push(`marque.id_marque IN (${marqueFilter.map(() => '?').join(',')})`);
+    params.push(...marqueFilter);
+  }
+
+  if (cibleFilter.length > 0) {
+    conditions.push(`cible.id_cible IN (${cibleFilter.map(() => '?').join(',')})`);
+    params.push(...cibleFilter);
+  }
+
+  if (tailleFilter.length > 0) {
+    conditions.push(`taille.id_taille IN (${tailleFilter.map(() => '?').join(',')})`);
+    params.push(...tailleFilter);
+  }
+
+  if (couleurFilter.length > 0) {
+    conditions.push(`couleur.id_couleur IN (${couleurFilter.map(() => '?').join(',')})`);
+    params.push(...couleurFilter);
+  }
+
+  if (matiereFilter.length > 0) {
+    conditions.push(`matiere.id_matiere IN (${matiereFilter.map(() => '?').join(',')})`);
+    params.push(...matiereFilter);
+  }
 
   const q = `SELECT varianteproduit.*, produit.nom_produit, produit.date_entrant, marque.nom AS nom_marque,
-  categorie.nom_categorie, matiere.nom_matiere, cible.nom_cible, taille.taille AS pointure, pays.code_pays,
-  couleur.description, taille_pays.prix, famille.nom AS nom_famille
-  FROM varianteproduit
-  INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit 
-  INNER JOIN marque ON produit.id_marque = marque.id_marque
-  INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
-  INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
-  INNER JOIN cible ON produit.id_cible = cible.id_cible
-  INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
-  INNER JOIN pays ON taille.id_pays = pays.id_pays
-  INNER JOIN couleur ON varianteproduit.id_couleur = couleur.id_couleur
-  INNER JOIN taille_pays ON varianteproduit.code_variant = taille_pays.code_variant
-  INNER JOIN famille ON categorie.id_famille = famille.id_famille 
-  WHERE produit.est_supprime = 0 AND produit.etatProduit = 'Actif'
-    ${familleFilter[0] !== '' && familleFilter[0] !== 'null' ? `AND famille.id_famille IN (${familleFilter.map(famille => `'${famille}'`).join(',')})` : ''}
-    ${marqueFilter[0] !== 'null'  ? `AND marque.id_marque IN (${marqueFilter.map(marque => `'${marque}'`).join(',')})` : ''}
-    ${cibleFilter[0] !== 'null'  ? `AND cible.id_cible IN (${cibleFilter.map(cible => `'${cible}'`).join(',')})` : ''}
-    ${tailleFilter[0] !== 'null'  ? `AND taille.id_taille IN (${tailleFilter.map(taille => `'${taille}'`).join(',')})` : ''}
-    ${couleurFilter[0] !== 'null'  ? `AND couleur.id_couleur IN (${couleurFilter.map(couleur => `'${couleur}'`).join(',')})` : ''}
-    ${matiereFilter[0] !== 'null'  ? `AND matiere.id_matiere IN (${matiereFilter.map(matiere => `'${matiere}'`).join(',')})` : ''}
-    
+    categorie.nom_categorie, matiere.nom_matiere, cible.nom_cible, taille.taille AS pointure, pays.code_pays,
+    couleur.description, taille_pays.prix, famille.nom AS nom_famille
+    FROM varianteproduit
+    INNER JOIN produit ON varianteproduit.id_produit = produit.id_produit 
+    INNER JOIN marque ON produit.id_marque = marque.id_marque
+    INNER JOIN categorie ON produit.id_categorie = categorie.id_categorie
+    INNER JOIN matiere ON produit.id_matiere = matiere.id_matiere
+    INNER JOIN cible ON produit.id_cible = cible.id_cible
+    INNER JOIN taille ON varianteproduit.id_taille = taille.id_taille
+    INNER JOIN pays ON taille.id_pays = pays.id_pays
+    INNER JOIN couleur ON varianteproduit.id_couleur = couleur.id_couleur
+    INNER JOIN taille_pays ON varianteproduit.code_variant = taille_pays.code_variant
+    INNER JOIN famille ON categorie.id_famille = famille.id_famille 
+    WHERE produit.est_supprime = 0 AND produit.etatProduit = 'Actif'
+    ${conditions.length > 0 ? 'AND ' + conditions.join(' AND ') : ''}
+    GROUP BY varianteproduit.img`;
 
-  GROUP BY varianteproduit.img
-  `;
-  
-  db.query(q, (error, data) => {
+  db.query(q, params, (error, data) => {
     if (error) {
+      console.error('Database error:', error);
       return res.status(500).send(error);
     }
     return res.status(200).json(data);
   });
-}; 
+};
 
 exports.getVariantProduitFiltrageMarque = (req, res) => {
     const marqueFilter = req.params.id.split(',');
