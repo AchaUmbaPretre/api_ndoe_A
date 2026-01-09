@@ -3,65 +3,6 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-/* exports.getRapportVenteV = (req, res) => {
-  const { start_date, end_date, marque_id,couleur_id, taille_id } = req.query;
-
-  let q = `
-  SELECT
-    m.id_marque,
-    taille.taille,
-    SUM(v.quantite) AS quantite_vendue,
-    SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
-    SUM(vp.stock) AS quantite_en_stock,
-    COUNT(DISTINCT v.id_vente) AS nombre_vendu,
-    vp.img,
-    m.nom AS nom_marque,
-    categorie.nom_categorie,
-    couleur.description,
-    v.date_vente,
-    vp.code_variant
-FROM vente v
-INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
-INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
-INNER JOIN produit p ON vp.id_produit = p.id_produit
-INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
-INNER JOIN marque m ON p.id_marque = m.id_marque
-INNER JOIN taille ON vp.id_taille = taille.id_taille
-INNER JOIN categorie ON p.id_categorie = categorie.id_categorie
-WHERE v.est_supprime = 0
-  ${start_date ? `AND DATE(v.date_vente) >= '${start_date}'` : ''}
-  ${end_date ? `AND DATE(v.date_vente) <= '${end_date}'` : ''}
-  `;
-
-  if (marque_id && marque_id !== 'undefined') {
-    q += ` AND m.id_marque = ${marque_id}`;
-  }
-
-  if (couleur_id && couleur_id !== 'undefined') {
-    q += ` AND couleur.id_couleur = ${couleur_id}`;
-  }
-
-  if (taille_id && taille_id !== 'undefined') {
-    q += ` AND taille.id_taille = ${taille_id}`;
-  }
-
-  q += ' GROUP BY vp.code_variant, couleur.description';
-  q += ' ORDER BY v.date_vente DESC';
-
-  try {
-    db.query(q, (error, data) => {
-      if (error) {
-        console.log(error);
-        return res.status(500).json({ error: 'Tous les champs sont requis' });
-      }
-
-      return res.status(200).json(data);
-    });
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}; */
-
 exports.getRapportVenteV = (req, res) => {
   const { start_date, end_date, marque_id, couleur_id, taille_id } = req.query;
   const page = parseInt(req.query.page) || 1;
@@ -295,8 +236,6 @@ exports.getRapportDateRecenteJour30jours = (req, res) => {
   }
 };
 
-
-
 exports.getRapportVenteJour = (req, res) => {
 
   let q = `
@@ -470,50 +409,6 @@ WHERE v.est_supprime = 0 AND vp.code_variant = '${code_variant}'
   }
 };
 
-/* exports.getRapportVente = (req, res) => {
-    const { start_date, end_date, marque_id } = req.query;
-
-    let q = `
-  SELECT
-    m.id_marque,
-    SUM(v.quantite) AS quantite_vendue,
-    SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
-    SUM(vp.stock) AS quantite_en_stock,
-    vp.img,
-    COUNT(vp.id_varianteProduit) AS nombre_vendu,
-    m.nom AS nom_marque,
-    categorie.nom_categorie
-  FROM vente v
-    INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
-    INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
-    INNER JOIN produit p ON vp.id_produit = p.id_produit
-    INNER JOIN marque m ON p.id_marque = m.id_marque
-    INNER JOIN taille ON vp.id_taille = taille.id_taille
-    INNER JOIN categorie ON p.id_categorie = categorie.id_categorie
-  WHERE v.est_supprime = 0
-        ${start_date ? `AND v.date_vente >= '${start_date}'` : ''}
-        ${end_date ? `AND v.date_vente <= '${end_date}'` : ''}
-    `;
-  
-    if (marque_id) {
-      q += ` AND m.id_marque = ${marque_id}`;
-    }
-  
-    q += ' GROUP BY m.id_marque';
-  
-    try {
-      db.query(q, (error, data) => {
-        if (error) {
-          return res.status(500).json({ error: 'Tous les champs sont requis' });
-        }
-  
-        return res.status(200).json(data);
-      });
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }; */
-  
 exports.getRapportVente = (req, res) => {
     const { start_date, end_date, marque_id } = req.query;
   
@@ -817,42 +712,6 @@ exports.getRapportVenteCat = (req, res) => {
     }
   };
 
-
-/* exports.getRapportVenteCouleur = (req, res) => {
-    const { start_date, end_date } = req.query;
-  
-    let q = `
-        SELECT
-      couleur.id_couleur,
-      couleur.description,
-      SUM(v.quantite) AS quantite_vendue
-    FROM vente v
-      INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
-      INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
-      INNER JOIN produit p ON vp.id_produit = p.id_produit
-      INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
-    WHERE v.est_supprime = 0
-    ${start_date ? `AND DATE(v.date_vente) >= '${start_date}'` : ''}
-    ${end_date ? `AND DATE(v.date_vente) <= '${end_date}'` : ''}
-    `;
-  
-    q += ' GROUP BY vp.code_variant, couleur.description';
-    q += ' ORDER BY quantite_vendue DESC';
-  
-    try {
-      db.query(q, (error, data) => {
-        if (error) {
-          console.log(error);
-          return res.status(500).json({ error: 'Tous les champs sont requis' });
-        }
-  
-        return res.status(200).json(data);
-      });
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }; */
-
 exports.getRapportVenteCouleur = (req, res) => {
     const { start_date, end_date } = req.query;
   
@@ -998,88 +857,6 @@ WHERE v.est_supprime = 0
       return res.status(500).json({ error: error.message });
     }
 };
-
-
-/* exports.getRapportCouleurAll = (req, res) => {
-
-    const { start_date, end_date, id_couleur,id_marque } = req.query;
-    
-      let q = `
-      SELECT
-      m.id_marque,
-      taille.taille,
-      MAX(v.quantite) AS quantite_vendue,
-      SUM(v.prix_unitaire * v.quantite) AS montant_vendu,
-      MAX(vp.stock) AS quantite_en_stock,
-      vp.img,
-      m.nom AS nom_marque,
-      categorie.nom_categorie,
-      couleur.description,
-      v.date_vente,
-      client.nom AS nom_client,
-      users.username
-  FROM vente v
-  INNER JOIN detail_commande ON v.id_detail_commande = detail_commande.id_detail
-  INNER JOIN varianteproduit vp ON detail_commande.id_varianteProduit = vp.id_varianteProduit
-  INNER JOIN commande ON detail_commande.id_commande = commande.id_commande
-  INNER JOIN client ON commande.id_client = client.id
-  INNER JOIN users ON v.id_livreur = users.id
-  INNER JOIN produit p ON vp.id_produit = p.id_produit
-  INNER JOIN couleur ON vp.id_couleur = couleur.id_couleur
-  INNER JOIN marque m ON p.id_marque = m.id_marque
-  INNER JOIN taille ON vp.id_taille = taille.id_taille
-  INNER JOIN categorie ON p.id_categorie = categorie.id_categorie
-  WHERE v.est_supprime = 0
-    ${start_date ? `AND DATE(v.date_vente) >= '${start_date}'` : ''}
-    ${end_date ? `AND DATE(v.date_vente) <= '${end_date}'` : ''}
-      `;
-      if (id_couleur && id_couleur !== 'undefined') {
-        q += ` AND couleur.id_couleur = ${id_couleur}`;
-      }
-      if (id_marque && id_marque !== 'undefined') {
-        q += ` AND m.id_marque = ${id_marque}`;
-      }
-      q += ' GROUP BY vp.id_varianteProduit,m.id_marque,couleur.id_couleur';
-    
-      try {
-        db.query(q, (error, data) => {
-          if (error) {
-            return res.status(500).json({ error: error.message });
-          }
-    
-          return res.status(200).json(data);
-        });
-      } catch (error) {
-        return res.status(500).json({ error: error.message });
-      }
-    };
- */
-/* exports.getRapportMarqueCount = (req, res) => {
-  
-    let q = `
-      SELECT
-      m.id_marque,
-      m.nom AS nom_marque,
-      COUNT(vp.id_varianteProduit) AS total_chaussures_en_stock
-  FROM marque m
-  INNER JOIN produit p ON m.id_marque = p.id_marque
-  INNER JOIN varianteproduit vp ON p.id_produit = vp.id_produit
-  WHERE vp.stock > 0
-  GROUP BY m.id_marque, m.nom;
-    `;
-  
-    try {
-      db.query(q, (error, data) => {
-        if (error) {
-          return res.status(500).json({ error: error.message });
-        }
-  
-        return res.status(200).json(data);
-      });
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }; */
   
 exports.getRapportMarqueCount = (req, res) => {
   
@@ -1280,33 +1057,6 @@ exports.getRapportRevenu = (req, res) => {
     }
   };
 
-/* exports.getRapportRevenuAllDays = (req, res) => {
-    const { months } = req.query;
-    
-    let q = `
-      SELECT
-        DATE(date_vente) AS date_vente,
-        SUM(prix_unitaire) AS revenu_total
-      FROM vente
-      WHERE vente.est_supprime = 0
-        ${months ? `AND YEAR(date_vente) = '${months}'` : ''}
-      GROUP BY DATE(date_vente)
-      ORDER BY DATE(date_vente);
-    `;
-    
-    try {
-      db.query(q, (error, data) => {
-        if (error) {
-          return res.status(500).json({ error: error.message });
-        }
-  
-        return res.status(200).json(data);
-      });
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  }; */
-
 exports.getRapportRevenuAllDays = (req, res) => {
     const { months } = req.query;
   
@@ -1337,8 +1087,6 @@ exports.getRapportRevenuAllDays = (req, res) => {
     }
   };
   
-  
-
 exports.getRapportRevenuRapDuMois = (req, res) => {
     
       let q = `
@@ -1429,25 +1177,6 @@ exports.getAchatsTotalDuel = (req, res) => {
   })
   }
 
-/* exports.getVenteTotal = (req, res) => {
-  const { start_date, end_date } = req.query;
-
-  const q = `SELECT SUM(prix_unitaire) AS montant_total_vente
-             FROM vente
-             WHERE vente.est_supprime = 0
-             ${start_date ? `AND DATE(vente.date_vente) >= '${start_date}'` : ''}
-             ${end_date ? `AND DATE(vente.date_vente) <= '${end_date}'` : ''}`;
-
-  db.query(q, (error, data) => {
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: 'Une erreur s\'est produite lors de l\'exécution de la requête.' });
-    }
-
-    return res.status(200).json(data);
-  });
-}; */
-
 exports.getVenteTotal = (req, res) => {
   const { start_date, end_date, filter, year } = req.query;
 
@@ -1485,7 +1214,6 @@ exports.getVenteTotal = (req, res) => {
     return res.status(200).json(data);
   });
 };
-
 
 exports.getVenteTotalDuJour = (req, res) => {
 
@@ -1676,4 +1404,3 @@ exports.getDepenseRapportGraphique = (req, res) => {
         });
     });
 };
-  

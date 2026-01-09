@@ -112,7 +112,7 @@ exports.getProduitOne = (req,res) => {
     if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getProduitTotalAchats = (req, res) => {
     const q = `
@@ -126,7 +126,7 @@ exports.getProduitTotalAchats = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
     });
-  };
+};
 
 exports.getProduitRecement = (req, res) => {
     try {
@@ -161,7 +161,7 @@ exports.getProduitRecement = (req, res) => {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-  };
+};
 
 exports.postProduit = (req, res) => {
     const qProduit = 'INSERT INTO produit(`nom_produit`,`id_categorie`,`id_marque`,`id_matiere`,`actif`,`date_entrant`,`date_MisAjour`,`id_cible`, `prix`, `code_variante`, `etatProduit`) VALUES(?)';
@@ -188,15 +188,6 @@ exports.postProduit = (req, res) => {
     });
   };
 
-/* exports.deleteProduit = (req, res) => {
-    const {id} = req.params;
-    const q = "UPDATE produit SET est_supprime = 1 WHERE id_produit = ?";
-  
-    db.query(q, [id], (err, data) => {
-      if (err) return res.send(err);
-      return res.json(data);
-    });
-  }; */
 exports.putPutStatusProduit = (req, res) => {
     const {id} = req.params;
   const q = `UPDATE produit
@@ -324,7 +315,7 @@ exports.getVariantProduitAll = (req, res) => {
         if (error) res.status(500).send(error);
         return res.status(200).json(data);
     });
-  }
+};
 
 exports.getListeVariantProduit = (req, res) => {
     const { page = 1, pageSize = 10 } = req.query;
@@ -413,8 +404,7 @@ exports.getListeVariantProduit = (req, res) => {
         });
       });
     });
-  };
-  
+};  
   
 exports.getVariantProduitOne = (req, res) => {
     const { id } = req.params;
@@ -443,7 +433,7 @@ exports.getVariantProduitOne = (req, res) => {
       if (error) return res.status(500).send(error);
       return res.status(200).json(data);
     });
-  };
+};
 
 exports.getMouvementVariante = (req,res) => {
   const {id} = req.params;
@@ -1266,6 +1256,7 @@ exports.putMarque = (req, res) => {
     return res.json(data);
   });
 };
+
 //famille
 exports.getFamille = (req, res) => {
 
