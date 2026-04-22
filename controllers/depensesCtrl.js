@@ -78,7 +78,6 @@ exports.deleteCatDepense = (req, res) => {
 exports.getDepense = (req, res) => {
   const { page = 1, pageSize = 15 } = req.query;
   const offset = (page - 1) * pageSize;
-  console.log(page, pageSize)
 
   const totalQuery = `
     SELECT COUNT(DISTINCT DATE(depenses.date_depense)) AS total
@@ -277,7 +276,7 @@ exports.postDepense = (req, res) => {
 
 exports.deleteDepense = (req, res) => {
     const Id = req.params.id;
-    const q = "DELETE depenses WHERE id_depense = ?";
+    const q = "DELETE FROM depenses WHERE id_depense = ?";
   
     db.query(q, [Id], (err, data) => {
       if (err) return res.send(err);

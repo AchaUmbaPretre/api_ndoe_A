@@ -21,7 +21,6 @@ const app = express();
 
 dotenv.config();
 
-
 // Configuration de l'environnement de développement
 const environment = process.env.PORT || 'development';
 
