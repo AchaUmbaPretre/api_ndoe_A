@@ -117,18 +117,18 @@ exports.getDepense = (req, res) => {
       return res.status(500).send(error);
     }
 
-    const total = totalResult[0].total;
+  const total = totalResult[0].total;
 
-    db.query(q, [parseInt(pageSize), parseInt(offset)], (error, data) => {
+  db.query(q, [parseInt(pageSize), parseInt(offset)], (error, data) => {
       if (error) {
         return res.status(500).send(error);
       }
 
       return res.status(200).json({
-        total,
-        page,
-        pageSize,
-        data
+          total,
+          page,
+          pageSize,
+          data
       });
     });
   });
@@ -147,7 +147,7 @@ exports.getDepenseDate = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepenseJour = (req, res) => {
 
@@ -164,7 +164,7 @@ exports.getDepenseJour = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepenseHier = (req, res) => {
 
@@ -181,7 +181,7 @@ exports.getDepenseHier = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepense7jours = (req, res) => {
 
@@ -198,7 +198,7 @@ exports.getDepense7jours = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepense30jours = (req, res) => {
 
@@ -215,7 +215,7 @@ exports.getDepense30jours = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepense1an = (req, res) => {
 
