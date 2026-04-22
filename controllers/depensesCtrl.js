@@ -470,7 +470,7 @@ exports.caisseDetteRapportNbreJour = (req, res) => {
     });
   };
 
-  exports.caissePaiementJourMontant = (req, res) => {
+exports.caissePaiementJourMontant = (req, res) => {
     const { start_date, end_date } = req.query;
   
     let q = `
