@@ -232,7 +232,7 @@ exports.getDepense1an = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.getDepenseRapportGlobal = (req, res) => {
 
@@ -250,7 +250,7 @@ exports.getDepenseRapportGlobal = (req, res) => {
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-}
+};
 
 exports.postDepense = (req, res) => {
     const q = 'INSERT INTO depenses(`id_livreur`, `id_catDepense`, `date_depense`, `montant`, `montant_franc`, `description`,`user_cr`) VALUES(?,?,?,?,?,?,?)';
@@ -272,7 +272,7 @@ exports.postDepense = (req, res) => {
         res.json('Processus réussi');
       }
     });
-}
+};
 
 exports.deleteDepense = (req, res) => {
     const Id = req.params.id;
@@ -332,7 +332,7 @@ exports.depenseTotal = (req, res) => {
       
           return res.status(200).json(data);
         });
-      };
+};
       
 
 //caisse
@@ -349,7 +349,7 @@ exports.caisseVenteCount = (req, res) => {
   
       return res.status(200).json(data);
   })
-  }
+};
 
 exports.caisseCommandeCount = (req, res) => {
   const { start_date, end_date } = req.query;
@@ -366,7 +366,7 @@ exports.caisseCommandeCount = (req, res) => {
         if (error) res.status(500).send(error);
         return res.status(200).json(data);
     });
-  }
+};
 
 exports.caisseLivraisonNbreDuJours = (req, res)=>{
   const { start_date, end_date } = req.query;
@@ -382,7 +382,7 @@ exports.caisseLivraisonNbreDuJours = (req, res)=>{
       if (error) res.status(500).send(error);
       return res.status(200).json(data);
   });
-  }
+};
 
 
 exports.caisseClientCount = (req, res) => {
@@ -402,7 +402,7 @@ exports.caisseClientCount = (req, res) => {
       }
       return res.status(200).json(data[0].total);
     });
-  };
+};
   
 exports.caisseMouvementCountJour = (req, res) => {
     const { start_date, end_date } = req.query;
@@ -432,8 +432,7 @@ exports.caisseMouvementCountJour = (req, res) => {
       }
       return res.status(200).json(data);
     });
-  };
-
+};
 
 exports.caisseDetteRapportNbreJour = (req, res) => {
     const { start_date, end_date } = req.query;
